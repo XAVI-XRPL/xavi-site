@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAVI RWA Launchpad — Tokenize Real World Assets on XRPL EVM</title>
+    <link rel="icon" type="image/png" href="xavi-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0D0A1A;
+            --bg-surface: #15112A;
+            --bg-card: #1E1836;
+            --bg-elevated: #251D45;
+            --primary: #8B5CF6;
+            --primary-light: #A855F7;
+            --primary-dark: #6D28D9;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --accent: #C084FC;
+            --gold: #FFD700;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --border: #2D2550;
+            --border-light: #3D3570;
+            --success: #22C55E;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            --gradient-accent: linear-gradient(135deg, var(--primary-light) 0%, var(--accent) 100%);
+            --gradient-gold: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+        
+        .bg-glow {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+                        radial-gradient(circle at 70% 80%, rgba(255, 215, 0, 0.08) 0%, transparent 40%);
+            pointer-events: none;
+        }
+        
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px;
+            background: rgba(13, 10, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .logo img { height: 40px; }
+        .logo-text { font-weight: 700; font-size: 20px; }
+        .logo-text span { color: var(--gold); }
+        
+        .nav-actions { display: flex; gap: 12px; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 20px var(--primary-glow);
+        }
+        
+        .btn-primary:hover { transform: translateY(-2px); }
+        
+        .btn-gold {
+            background: var(--gradient-gold);
+            color: #1a1a1a;
+            font-weight: 700;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .connect-btn {
+            padding: 12px 24px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .connect-btn.connected {
+            background: var(--bg-surface);
+            border: 1px solid var(--success);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-top: 20px;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--gold);
+            border-radius: 24px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 44px;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+        
+        h1 .gradient {
+            background: var(--gradient-gold);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* Stats */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-gold);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--bg-surface);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            width: fit-content;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { background: var(--primary); color: white; }
+        
+        /* Asset Grid */
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+        }
+        
+        .asset-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .asset-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.1);
+        }
+        
+        .asset-image {
+            height: 200px;
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            position: relative;
+        }
+        
+        .asset-badge {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: var(--gradient-gold);
+            color: #1a1a1a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .asset-content {
+            padding: 24px;
+        }
+        
+        .asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .asset-name {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .asset-symbol {
+            background: var(--bg-card);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--gold);
+        }
+        
+        .asset-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .asset-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 14px;
+        }
+        
+        .asset-stat {
+            text-align: center;
+        }
+        
+        .asset-stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        
+        .asset-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .asset-progress {
+            margin-bottom: 16px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-card);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-gold);
+            transition: width 0.5s;
+        }
+        
+        .asset-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .asset-actions .btn {
+            justify-content: center;
+        }
+        
+        /* Whitelist Badge */
+        .whitelist-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .whitelist-badge.verified {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+        }
+        
+        .whitelist-badge.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .modal-title { font-size: 24px; font-weight: 700; }
+        
+        .modal-close {
+            background: var(--bg-card);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        
+        /* Feature List */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+        
+        .feature-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .feature-card:hover {
+            border-color: var(--primary);
+        }
+        
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-gold);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 16px;
+        }
+        
+        .feature-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .feature-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        @media (max-width: 1024px) {
+            .features-grid { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 900px) {
+            h1 { font-size: 32px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .asset-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    
+    <nav>
+        <div class="nav-inner">
+            <a href="https://xavi-site.vercel.app" class="logo">
+                <img src="xavi-logo.png" alt="XAVI">
+                <span class="logo-text">XAVI <span>RWA</span></span>
+            </a>
+            <div class="nav-actions">
+                <button class="btn btn-gold" onclick="openCreateModal()">🏛️ Tokenize Asset</button>
+                <button class="connect-btn" id="connectBtn" onclick="connectWallet()">🔗 Connect Wallet</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="hero">
+            <div class="hero-badge">
+                🏛️ Real World Asset Tokenization
+            </div>
+            <h1>Tokenize <span class="gradient">Real World Assets</span></h1>
+            <p class="subtitle">Transform real estate, commodities, art, and more into compliant tokens on XRPL EVM. Whitelist verification, dividend distribution, and seamless fractional ownership.</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">✅</div>
+                <h3 class="feature-title">Whitelist Compliance</h3>
+                <p class="feature-desc">Built-in KYC/AML compliance with investor whitelisting for regulatory requirements.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💰</div>
+                <h3 class="feature-title">Dividend Distribution</h3>
+                <p class="feature-desc">Automatic dividend payments to token holders proportional to their ownership.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3 class="feature-title">Secure Custody</h3>
+                <p class="feature-desc">Multi-signature controls and pausable transfers for enhanced security.</p>
+            </div>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalAssets">0</div>
+                <div class="stat-label">Assets Tokenized</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalValue">$0</div>
+                <div class="stat-label">Total Value Locked</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalInvestors">0</div>
+                <div class="stat-label">Investors</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalDividends">0</div>
+                <div class="stat-label">XRP Distributed</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="filterAssets('all')">All Assets</button>
+            <button class="tab" onclick="filterAssets('active')">Active Sales</button>
+            <button class="tab" onclick="filterAssets('sold')">Fully Funded</button>
+        </div>
+        
+        <div class="asset-grid" id="assetGrid">
+            <div class="empty-state">
+                <div class="empty-state-icon">🏛️</div>
+                <h3>Loading tokenized assets...</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Asset Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">🏛️ Tokenize New Asset</h2>
+                <button class="modal-close" onclick="closeCreateModal()">×</button>
+            </div>
+            
+            <form onsubmit="createAsset(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Token Name</label>
+                        <input type="text" class="form-input" id="tokenName" placeholder="Manhattan Tower Fund" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Token Symbol</label>
+                        <input type="text" class="form-input" id="tokenSymbol" placeholder="MTF" maxlength="5" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Asset Description</label>
+                    <textarea class="form-input" id="assetDesc" placeholder="Describe the underlying asset..." required style="min-height: 80px;"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Asset Type</label>
+                    <select class="form-input" id="assetType" required>
+                        <option value="">Select type...</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="commodity">Commodity</option>
+                        <option value="art">Art & Collectibles</option>
+                        <option value="infrastructure">Infrastructure</option>
+                        <option value="private-equity">Private Equity</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Total Supply</label>
+                        <input type="number" class="form-input" id="totalSupply" placeholder="1000000" required>
+                        <p class="form-hint">Number of tokens to create</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price Per Token (XRP)</label>
+                        <input type="number" class="form-input" id="tokenPrice" placeholder="1" step="0.01" required>
+                        <p class="form-hint">Initial offering price</p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Documentation URI</label>
+                    <input type="url" class="form-input" id="docUri" placeholder="https://ipfs.io/ipfs/...">
+                    <p class="form-hint">Link to legal documents, prospectus, etc.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="requireWhitelist" checked>
+                        <span class="form-label" style="margin: 0;">Require Investor Whitelist</span>
+                    </label>
+                    <p class="form-hint">Only whitelisted addresses can hold tokens</p>
+                </div>
+                
+                <button type="submit" class="btn btn-gold" id="createBtn" style="width: 100%; justify-content: center; padding: 16px;">
+                    🚀 Create RWA Token
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Invest Modal -->
+    <div class="modal-overlay" id="investModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">💰 Invest in Asset</h2>
+                <button class="modal-close" onclick="closeInvestModal()">×</button>
+            </div>
+            
+            <div id="investDetails"></div>
+            
+            <div class="form-group">
+                <label class="form-label">Amount to Invest (XRP)</label>
+                <input type="number" class="form-input" id="investAmount" placeholder="10" step="0.1" oninput="updateInvestPreview()">
+            </div>
+            
+            <div style="background: var(--bg-card); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="color: var(--text-muted);">Tokens to Receive</span>
+                    <span style="font-weight: 600;" id="tokensToReceive">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Ownership %</span>
+                    <span style="font-weight: 600; color: var(--gold);" id="ownershipPercent">0%</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-gold" id="investBtn" onclick="executeInvest()" style="width: 100%; justify-content: center; padding: 16px;">
+                🎯 Confirm Investment
+            </button>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMsg">Success!</span>
+    </div>
+
+    <script>
+        const FACTORY_ADDRESS = '0xe3C0F448a7D36126B782928fAed0C34175d30358';
+        const CHAIN_ID = 1440000;
+        const RPC_URL = 'https://rpc.xrplevm.org';
+        
+        const FACTORY_ABI = [
+            'function createRWAToken(string name, string symbol, string assetUri, uint256 totalSupply, uint256 pricePerToken, bool requireWhitelist) external returns (address)',
+            'function getDeployedTokens() external view returns (address[])',
+            'function deployedTokens(uint256) external view returns (address)',
+            'event RWATokenCreated(address indexed tokenAddress, string name, string symbol, address indexed creator)'
+        ];
+        
+        const TOKEN_ABI = [
+            'function name() external view returns (string)',
+            'function symbol() external view returns (string)',
+            'function totalSupply() external view returns (uint256)',
+            'function balanceOf(address) external view returns (uint256)',
+            'function pricePerToken() external view returns (uint256)',
+            'function assetUri() external view returns (string)',
+            'function whitelistRequired() external view returns (bool)',
+            'function isWhitelisted(address) external view returns (bool)',
+            'function purchase() external payable',
+            'function distributeDividends() external payable',
+            'function claimDividends() external',
+            'function addToWhitelist(address) external',
+            'function removeFromWhitelist(address) external'
+        ];
+        
+        let provider, signer, factoryContract, userAddress;
+        let allAssets = [];
+        let currentFilter = 'all';
+        let currentInvestAsset = null;
+        
+        const assetIcons = {
+            'real-estate': '🏢',
+            'commodity': '⚡',
+            'art': '🎨',
+            'infrastructure': '🌉',
+            'private-equity': '📈',
+            'other': '💎'
+        };
+        
+        async function connectWallet() {
+            if (!window.ethereum) {
+                showToast('Please install MetaMask!', 'error');
+                return;
+            }
+            
+            try {
+                const chainIdHex = '0x' + CHAIN_ID.toString(16);
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: chainIdHex }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: chainIdHex,
+                                chainName: 'XRPL EVM Sidechain',
+                                nativeCurrency: { name: 'XRP', symbol: 'XRP', decimals: 18 },
+                                rpcUrls: [RPC_URL],
+                                blockExplorerUrls: ['https://explorer.xrplevm.org'],
+                            }],
+                        });
+                    }
+                }
+                
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                factoryContract = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+                
+                const btn = document.getElementById('connectBtn');
+                btn.innerHTML = `✓ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+                btn.classList.add('connected');
+                
+                showToast('Wallet connected!', 'success');
+                loadAssets();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to connect', 'error');
+            }
+        }
+        
+        async function loadAssets() {
+            try {
+                const readProvider = new ethers.JsonRpcProvider(RPC_URL);
+                const readFactory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, readProvider);
+                
+                const tokens = await readFactory.getDeployedTokens();
+                document.getElementById('totalAssets').textContent = tokens.length;
+                
+                allAssets = [];
+                let totalVal = 0;
+                
+                for (const tokenAddr of tokens) {
+                    try {
+                        const token = new ethers.Contract(tokenAddr, TOKEN_ABI, readProvider);
+                        const [name, symbol, supply, price, uri, whitelist] = await Promise.all([
+                            token.name(),
+                            token.symbol(),
+                            token.totalSupply(),
+                            token.pricePerToken(),
+                            token.assetUri(),
+                            token.whitelistRequired()
+                        ]);
+                        
+                        const priceXRP = Number(price) / 1e18;
+                        const supplyNum = Number(supply) / 1e18;
+                        const value = priceXRP * supplyNum;
+                        totalVal += value;
+                        
+                        allAssets.push({
+                            address: tokenAddr,
+                            name,
+                            symbol,
+                            totalSupply: supplyNum,
+                            pricePerToken: priceXRP,
+                            assetUri: uri,
+                            whitelistRequired: whitelist,
+                            totalValue: value,
+                            type: detectAssetType(name)
+                        });
+                        
+                    } catch (e) {
+                        console.log(`Token ${tokenAddr} error:`, e);
+                    }
+                }
+                
+                document.getElementById('totalValue').textContent = '$' + Math.round(totalVal * 0.5).toLocaleString();
+                
+                renderAssets();
+                
+            } catch (err) {
+                console.error('Failed to load assets:', err);
+                document.getElementById('assetGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏛️</div>
+                        <h3>No assets tokenized yet</h3>
+                        <p>Be the first to tokenize a real world asset!</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function detectAssetType(name) {
+            const lower = name.toLowerCase();
+            if (lower.includes('real') || lower.includes('tower') || lower.includes('property')) return 'real-estate';
+            if (lower.includes('gold') || lower.includes('silver') || lower.includes('oil')) return 'commodity';
+            if (lower.includes('art') || lower.includes('collect')) return 'art';
+            return 'other';
+        }
+        
+        function renderAssets() {
+            const grid = document.getElementById('assetGrid');
+            
+            if (allAssets.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏛️</div>
+                        <h3>No assets tokenized yet</h3>
+                        <p>Be the first to tokenize a real world asset!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = allAssets.map(a => `
+                <div class="asset-card">
+                    <div class="asset-image">
+                        ${assetIcons[a.type] || '💎'}
+                        <span class="asset-badge">${a.type.replace('-', ' ')}</span>
+                    </div>
+                    <div class="asset-content">
+                        <div class="asset-header">
+                            <h3 class="asset-name">${escapeHtml(a.name)}</h3>
+                            <span class="asset-symbol">${a.symbol}</span>
+                        </div>
+                        <p class="asset-desc">Tokenized real world asset on XRPL EVM with ${a.whitelistRequired ? 'whitelist compliance' : 'open trading'}.</p>
+                        <div class="asset-stats">
+                            <div class="asset-stat">
+                                <div class="asset-stat-value">${a.pricePerToken.toFixed(2)}</div>
+                                <div class="asset-stat-label">XRP/Token</div>
+                            </div>
+                            <div class="asset-stat">
+                                <div class="asset-stat-value">${formatNumber(a.totalSupply)}</div>
+                                <div class="asset-stat-label">Total Supply</div>
+                            </div>
+                            <div class="asset-stat">
+                                <div class="asset-stat-value">${formatNumber(a.totalValue)}</div>
+                                <div class="asset-stat-label">Total XRP</div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <span class="whitelist-badge ${a.whitelistRequired ? 'verified' : 'pending'}">
+                                ${a.whitelistRequired ? '✓ KYC Required' : '🌐 Open Trading'}
+                            </span>
+                        </div>
+                        <div class="asset-actions">
+                            <button class="btn btn-gold" onclick="openInvestModal('${a.address}')">💰 Invest</button>
+                            <a href="https://explorer.xrplevm.org/address/${a.address}" target="_blank" class="btn btn-secondary">View Contract</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toFixed(0);
+        }
+        
+        function filterAssets(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderAssets();
+        }
+        
+        function openCreateModal() {
+            if (!userAddress) {
+                showToast('Please connect wallet first', 'error');
+                return;
+            }
+            document.getElementById('createModal').classList.add('show');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+        }
+        
+        function openInvestModal(address) {
+            if (!userAddress) {
+                showToast('Please connect wallet first', 'error');
+                return;
+            }
+            
+            currentInvestAsset = allAssets.find(a => a.address === address);
+            if (!currentInvestAsset) return;
+            
+            document.getElementById('investDetails').innerHTML = `
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h3 style="font-size: 20px; margin-bottom: 8px;">${currentInvestAsset.name}</h3>
+                    <span class="asset-symbol">${currentInvestAsset.symbol}</span>
+                </div>
+            `;
+            
+            document.getElementById('investModal').classList.add('show');
+            updateInvestPreview();
+        }
+        
+        function closeInvestModal() {
+            document.getElementById('investModal').classList.remove('show');
+        }
+        
+        function updateInvestPreview() {
+            if (!currentInvestAsset) return;
+            
+            const amount = parseFloat(document.getElementById('investAmount').value) || 0;
+            const tokens = amount / currentInvestAsset.pricePerToken;
+            const ownership = (tokens / currentInvestAsset.totalSupply) * 100;
+            
+            document.getElementById('tokensToReceive').textContent = tokens.toFixed(2) + ' ' + currentInvestAsset.symbol;
+            document.getElementById('ownershipPercent').textContent = ownership.toFixed(4) + '%';
+        }
+        
+        async function createAsset(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('tokenName').value;
+            const symbol = document.getElementById('tokenSymbol').value;
+            const desc = document.getElementById('assetDesc').value;
+            const supply = document.getElementById('totalSupply').value;
+            const price = document.getElementById('tokenPrice').value;
+            const uri = document.getElementById('docUri').value || '';
+            const whitelist = document.getElementById('requireWhitelist').checked;
+            
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Creating...';
+            
+            try {
+                const tx = await factoryContract.createRWAToken(
+                    name,
+                    symbol,
+                    uri,
+                    ethers.parseEther(supply),
+                    ethers.parseEther(price),
+                    whitelist
+                );
+                
+                btn.innerHTML = '<div class="spinner"></div> Confirming...';
+                await tx.wait();
+                
+                showToast('RWA Token created! 🏛️', 'success');
+                closeCreateModal();
+                loadAssets();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed: ' + (err.reason || err.message), 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '🚀 Create RWA Token';
+        }
+        
+        async function executeInvest() {
+            const amount = document.getElementById('investAmount').value;
+            if (!amount || amount <= 0) {
+                showToast('Please enter an amount', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('investBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Investing...';
+            
+            try {
+                const tokenContract = new ethers.Contract(currentInvestAsset.address, TOKEN_ABI, signer);
+                const tx = await tokenContract.purchase({ value: ethers.parseEther(amount) });
+                
+                btn.innerHTML = '<div class="spinner"></div> Confirming...';
+                await tx.wait();
+                
+                showToast('Investment successful! 💰', 'success');
+                closeInvestModal();
+                loadAssets();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed: ' + (err.reason || err.message), 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '🎯 Confirm Investment';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastIcon').textContent = type === 'success' ? '✓' : '✗';
+            document.getElementById('toastMsg').textContent = msg;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Init
+        loadAssets();
+        if (window.ethereum?.selectedAddress) connectWallet();
+    </script>
+</body>
+</html>

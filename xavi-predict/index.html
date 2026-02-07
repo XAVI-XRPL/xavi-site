@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAVI Predict — Binary Prediction Markets on XRPL EVM</title>
+    <link rel="icon" type="image/png" href="xavi-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0D0A1A;
+            --bg-surface: #15112A;
+            --bg-card: #1E1836;
+            --bg-elevated: #251D45;
+            --primary: #8B5CF6;
+            --primary-light: #A855F7;
+            --primary-dark: #6D28D9;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --accent: #C084FC;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --border: #2D2550;
+            --border-light: #3D3570;
+            --success: #22C55E;
+            --success-glow: rgba(34, 197, 94, 0.3);
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --yes-color: #22C55E;
+            --no-color: #EF4444;
+            --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            --gradient-accent: linear-gradient(135deg, var(--primary-light) 0%, var(--accent) 100%);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+        
+        .bg-glow {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+                        radial-gradient(circle at 70% 80%, rgba(192, 132, 252, 0.08) 0%, transparent 40%);
+            pointer-events: none;
+        }
+        
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px;
+            background: rgba(13, 10, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .logo img { height: 40px; }
+        .logo-text { font-weight: 700; font-size: 20px; }
+        .logo-text span { color: var(--primary-light); }
+        
+        .nav-actions { display: flex; gap: 12px; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 20px var(--primary-glow);
+        }
+        
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--primary-glow); }
+        
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-yes { background: var(--yes-color); color: white; }
+        .btn-no { background: var(--no-color); color: white; }
+        
+        .connect-btn {
+            padding: 12px 24px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .connect-btn.connected {
+            background: var(--bg-surface);
+            border: 1px solid var(--success);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-top: 20px;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        
+        .hero-badge .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+        }
+        
+        h1 {
+            font-size: 44px;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+        
+        h1 .gradient {
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Stats */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--bg-surface);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            width: fit-content;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { background: var(--primary); color: white; }
+        
+        /* Market Grid */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .market-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+        
+        .market-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
+        }
+        
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .market-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+        .status-resolved { background: rgba(139, 92, 246, 0.15); color: var(--primary-light); }
+        
+        .market-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .market-question {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        /* Probability Bar */
+        .prob-bar-container {
+            margin-bottom: 20px;
+        }
+        
+        .prob-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .prob-yes { color: var(--yes-color); }
+        .prob-no { color: var(--no-color); }
+        
+        .prob-bar {
+            height: 12px;
+            border-radius: 6px;
+            background: var(--no-color);
+            overflow: hidden;
+        }
+        
+        .prob-bar-fill {
+            height: 100%;
+            background: var(--yes-color);
+            transition: width 0.5s ease;
+        }
+        
+        /* Market Stats */
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 14px;
+        }
+        
+        .market-stat {
+            text-align: center;
+        }
+        
+        .market-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+        
+        .market-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        /* Trade Buttons */
+        .trade-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .trade-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .trade-btn-yes {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--yes-color);
+            border: 2px solid var(--yes-color);
+        }
+        
+        .trade-btn-yes:hover {
+            background: var(--yes-color);
+            color: white;
+        }
+        
+        .trade-btn-no {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--no-color);
+            border: 2px solid var(--no-color);
+        }
+        
+        .trade-btn-no:hover {
+            background: var(--no-color);
+            color: white;
+        }
+        
+        .trade-btn-price {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 480px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .modal-title { font-size: 24px; font-weight: 700; }
+        
+        .modal-close {
+            background: var(--bg-card);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        /* Trade Modal */
+        .trade-modal-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .trade-type {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .trade-type.yes { background: rgba(34, 197, 94, 0.2); color: var(--yes-color); }
+        .trade-type.no { background: rgba(239, 68, 68, 0.2); color: var(--no-color); }
+        
+        .trade-question {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+        
+        .trade-summary {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .trade-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .trade-row:last-child { margin-bottom: 0; }
+        .trade-row-label { color: var(--text-muted); }
+        .trade-row-value { font-weight: 600; }
+        
+        .potential-profit {
+            color: var(--success);
+            font-size: 18px;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        @media (max-width: 900px) {
+            h1 { font-size: 32px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .market-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    
+    <nav>
+        <div class="nav-inner">
+            <a href="https://xavi-site.vercel.app" class="logo">
+                <img src="xavi-logo.png" alt="XAVI">
+                <span class="logo-text">XAVI <span>Predict</span></span>
+            </a>
+            <div class="nav-actions">
+                <button class="btn btn-primary" onclick="openCreateModal()">+ Create Market</button>
+                <button class="connect-btn" id="connectBtn" onclick="connectWallet()">🔗 Connect Wallet</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="hero">
+            <div class="hero-badge">
+                <span class="dot"></span>
+                Live on XRPL EVM Sidechain
+            </div>
+            <h1>Binary <span class="gradient">Prediction Markets</span></h1>
+            <p class="subtitle">Trade on future outcomes with constant-product AMM pricing. Create markets, buy shares, and claim winnings.</p>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalMarkets">0</div>
+                <div class="stat-label">Total Markets</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="activeMarkets">0</div>
+                <div class="stat-label">Active Now</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalVolume">0</div>
+                <div class="stat-label">XRP Volume</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="resolvedMarkets">0</div>
+                <div class="stat-label">Resolved</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="filterMarkets('all')">All Markets</button>
+            <button class="tab" onclick="filterMarkets('active')">Active</button>
+            <button class="tab" onclick="filterMarkets('resolved')">Resolved</button>
+        </div>
+        
+        <div class="market-grid" id="marketGrid">
+            <div class="empty-state">
+                <div class="empty-state-icon">🔮</div>
+                <h3>Loading markets...</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Market Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">🔮 Create Market</h2>
+                <button class="modal-close" onclick="closeCreateModal()">×</button>
+            </div>
+            
+            <form onsubmit="createMarket(event)">
+                <div class="form-group">
+                    <label class="form-label">Question</label>
+                    <textarea class="form-input" id="marketQuestion" placeholder="Will ETH reach $10k by end of 2026?" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Resolution Deadline</label>
+                    <input type="datetime-local" class="form-input" id="marketDeadline" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Initial Liquidity (XRP)</label>
+                    <input type="number" class="form-input" id="initialLiquidity" placeholder="10" step="0.1" min="1" required>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                        Split 50/50 between YES and NO shares
+                    </p>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="createBtn" style="width: 100%; justify-content: center; padding: 16px;">
+                    🚀 Create Market
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Trade Modal -->
+    <div class="modal-overlay" id="tradeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">📈 Place Trade</h2>
+                <button class="modal-close" onclick="closeTradeModal()">×</button>
+            </div>
+            
+            <div class="trade-modal-header">
+                <div class="trade-type" id="tradeType">YES</div>
+                <p class="trade-question" id="tradeQuestion"></p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Amount (XRP)</label>
+                <input type="number" class="form-input" id="tradeAmount" placeholder="1" step="0.1" min="0.1" oninput="updateTradePreview()">
+            </div>
+            
+            <div class="trade-summary">
+                <div class="trade-row">
+                    <span class="trade-row-label">Shares Received</span>
+                    <span class="trade-row-value" id="sharesReceived">0</span>
+                </div>
+                <div class="trade-row">
+                    <span class="trade-row-label">Avg Price per Share</span>
+                    <span class="trade-row-value" id="avgPrice">0 XRP</span>
+                </div>
+                <div class="trade-row">
+                    <span class="trade-row-label">Potential Profit</span>
+                    <span class="trade-row-value potential-profit" id="potentialProfit">0 XRP</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" id="tradeBtn" onclick="executeTrade()" style="width: 100%; justify-content: center; padding: 16px;">
+                🎯 Confirm Trade
+            </button>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMsg">Success!</span>
+    </div>
+
+    <script>
+        const CONTRACT_ADDRESS = '0xb7527F782000c80EB0c142d87A07543f0CA24515';
+        const CHAIN_ID = 1440000;
+        const RPC_URL = 'https://rpc.xrplevm.org';
+        
+        const ABI = [
+            'function createMarket(string question, uint256 resolutionTime) external payable returns (uint256)',
+            'function buyYes(uint256 marketId) external payable returns (uint256)',
+            'function buyNo(uint256 marketId) external payable returns (uint256)',
+            'function sellYes(uint256 marketId, uint256 shares) external returns (uint256)',
+            'function sellNo(uint256 marketId, uint256 shares) external returns (uint256)',
+            'function resolveMarket(uint256 marketId, bool yesWins) external',
+            'function claimWinnings(uint256 marketId) external',
+            'function getMarket(uint256 marketId) external view returns (tuple(uint256 id, address creator, string question, uint256 resolutionTime, bool resolved, bool yesWins, uint256 yesShares, uint256 noShares, uint256 totalVolume))',
+            'function getYesPrice(uint256 marketId) external view returns (uint256)',
+            'function getNoPrice(uint256 marketId) external view returns (uint256)',
+            'function marketCount() external view returns (uint256)',
+            'function getUserShares(uint256 marketId, address user) external view returns (uint256 yesShares, uint256 noShares)'
+        ];
+        
+        let provider, signer, contract, userAddress;
+        let allMarkets = [];
+        let currentFilter = 'all';
+        let currentTrade = { marketId: null, isYes: true };
+        
+        async function connectWallet() {
+            if (!window.ethereum) {
+                showToast('Please install MetaMask!', 'error');
+                return;
+            }
+            
+            try {
+                const chainIdHex = '0x' + CHAIN_ID.toString(16);
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: chainIdHex }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: chainIdHex,
+                                chainName: 'XRPL EVM Sidechain',
+                                nativeCurrency: { name: 'XRP', symbol: 'XRP', decimals: 18 },
+                                rpcUrls: [RPC_URL],
+                                blockExplorerUrls: ['https://explorer.xrplevm.org'],
+                            }],
+                        });
+                    }
+                }
+                
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                
+                const btn = document.getElementById('connectBtn');
+                btn.innerHTML = `✓ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+                btn.classList.add('connected');
+                
+                showToast('Wallet connected!', 'success');
+                loadMarkets();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to connect', 'error');
+            }
+        }
+        
+        async function loadMarkets() {
+            try {
+                const readProvider = new ethers.JsonRpcProvider(RPC_URL);
+                const readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
+                
+                const count = await readContract.marketCount();
+                document.getElementById('totalMarkets').textContent = count.toString();
+                
+                allMarkets = [];
+                let active = 0, resolved = 0, totalVol = 0n;
+                
+                for (let i = 1; i <= Number(count); i++) {
+                    try {
+                        const market = await readContract.getMarket(i);
+                        const yesPrice = await readContract.getYesPrice(i);
+                        const noPrice = await readContract.getNoPrice(i);
+                        
+                        allMarkets.push({
+                            id: Number(market.id),
+                            creator: market.creator,
+                            question: market.question,
+                            resolutionTime: Number(market.resolutionTime),
+                            resolved: market.resolved,
+                            yesWins: market.yesWins,
+                            yesShares: market.yesShares,
+                            noShares: market.noShares,
+                            totalVolume: market.totalVolume,
+                            yesPrice: yesPrice,
+                            noPrice: noPrice
+                        });
+                        
+                        if (!market.resolved) active++;
+                        else resolved++;
+                        totalVol += market.totalVolume;
+                        
+                    } catch (e) {
+                        console.log(`Market ${i} error:`, e);
+                    }
+                }
+                
+                document.getElementById('activeMarkets').textContent = active;
+                document.getElementById('resolvedMarkets').textContent = resolved;
+                document.getElementById('totalVolume').textContent = parseFloat(ethers.formatEther(totalVol)).toFixed(1);
+                
+                renderMarkets();
+                
+            } catch (err) {
+                console.error('Failed to load markets:', err);
+                document.getElementById('marketGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔮</div>
+                        <h3>No markets yet</h3>
+                        <p>Be the first to create a prediction market!</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderMarkets() {
+            const grid = document.getElementById('marketGrid');
+            
+            let filtered = allMarkets;
+            if (currentFilter === 'active') filtered = allMarkets.filter(m => !m.resolved);
+            else if (currentFilter === 'resolved') filtered = allMarkets.filter(m => m.resolved);
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔮</div>
+                        <h3>No markets in this category</h3>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = filtered.map(m => {
+                const yesProb = Number(m.yesPrice) / 1e18 * 100;
+                const noProb = Number(m.noPrice) / 1e18 * 100;
+                const yesPriceXRP = (Number(m.yesPrice) / 1e18).toFixed(3);
+                const noPriceXRP = (Number(m.noPrice) / 1e18).toFixed(3);
+                const volume = parseFloat(ethers.formatEther(m.totalVolume)).toFixed(2);
+                const deadline = new Date(m.resolutionTime * 1000);
+                const timeLeft = deadline - Date.now();
+                const daysLeft = Math.max(0, Math.ceil(timeLeft / 86400000));
+                
+                return `
+                    <div class="market-card">
+                        <div class="market-header">
+                            <span class="market-id">#${m.id}</span>
+                            <span class="market-status ${m.resolved ? 'status-resolved' : 'status-active'}">
+                                ${m.resolved ? (m.yesWins ? '✓ YES Won' : '✗ NO Won') : 'Active'}
+                            </span>
+                        </div>
+                        <h3 class="market-question">${escapeHtml(m.question)}</h3>
+                        <div class="prob-bar-container">
+                            <div class="prob-labels">
+                                <span class="prob-yes">YES ${yesProb.toFixed(0)}%</span>
+                                <span class="prob-no">${noProb.toFixed(0)}% NO</span>
+                            </div>
+                            <div class="prob-bar">
+                                <div class="prob-bar-fill" style="width: ${yesProb}%"></div>
+                            </div>
+                        </div>
+                        <div class="market-stats">
+                            <div class="market-stat">
+                                <div class="market-stat-value">${volume}</div>
+                                <div class="market-stat-label">Volume XRP</div>
+                            </div>
+                            <div class="market-stat">
+                                <div class="market-stat-value">${daysLeft}d</div>
+                                <div class="market-stat-label">Time Left</div>
+                            </div>
+                            <div class="market-stat">
+                                <div class="market-stat-value">${yesPriceXRP}</div>
+                                <div class="market-stat-label">YES Price</div>
+                            </div>
+                        </div>
+                        ${!m.resolved ? `
+                            <div class="trade-section">
+                                <button class="trade-btn trade-btn-yes" onclick="openTradeModal(${m.id}, true)">
+                                    Buy YES
+                                    <span class="trade-btn-price">${yesPriceXRP} XRP</span>
+                                </button>
+                                <button class="trade-btn trade-btn-no" onclick="openTradeModal(${m.id}, false)">
+                                    Buy NO
+                                    <span class="trade-btn-price">${noPriceXRP} XRP</span>
+                                </button>
+                            </div>
+                        ` : `
+                            <button class="btn btn-secondary" style="width: 100%;" onclick="claimWinnings(${m.id})">
+                                💰 Claim Winnings
+                            </button>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterMarkets(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMarkets();
+        }
+        
+        function openCreateModal() {
+            if (!userAddress) {
+                showToast('Please connect wallet first', 'error');
+                return;
+            }
+            document.getElementById('createModal').classList.add('show');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+        }
+        
+        function openTradeModal(marketId, isYes) {
+            if (!userAddress) {
+                showToast('Please connect wallet first', 'error');
+                return;
+            }
+            
+            currentTrade = { marketId, isYes };
+            const market = allMarkets.find(m => m.id === marketId);
+            
+            document.getElementById('tradeType').textContent = isYes ? 'YES' : 'NO';
+            document.getElementById('tradeType').className = 'trade-type ' + (isYes ? 'yes' : 'no');
+            document.getElementById('tradeQuestion').textContent = market.question;
+            document.getElementById('tradeAmount').value = '';
+            updateTradePreview();
+            
+            document.getElementById('tradeModal').classList.add('show');
+        }
+        
+        function closeTradeModal() {
+            document.getElementById('tradeModal').classList.remove('show');
+        }
+        
+        function updateTradePreview() {
+            const amount = parseFloat(document.getElementById('tradeAmount').value) || 0;
+            const market = allMarkets.find(m => m.id === currentTrade.marketId);
+            if (!market || amount <= 0) {
+                document.getElementById('sharesReceived').textContent = '0';
+                document.getElementById('avgPrice').textContent = '0 XRP';
+                document.getElementById('potentialProfit').textContent = '0 XRP';
+                return;
+            }
+            
+            // Simplified AMM calculation
+            const price = currentTrade.isYes ? Number(market.yesPrice) / 1e18 : Number(market.noPrice) / 1e18;
+            const shares = amount / price;
+            const profit = shares - amount;
+            
+            document.getElementById('sharesReceived').textContent = shares.toFixed(2);
+            document.getElementById('avgPrice').textContent = price.toFixed(4) + ' XRP';
+            document.getElementById('potentialProfit').textContent = profit.toFixed(2) + ' XRP';
+        }
+        
+        async function createMarket(e) {
+            e.preventDefault();
+            
+            const question = document.getElementById('marketQuestion').value;
+            const deadline = document.getElementById('marketDeadline').value;
+            const liquidity = document.getElementById('initialLiquidity').value;
+            
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Creating...';
+            
+            try {
+                const resolutionTime = Math.floor(new Date(deadline).getTime() / 1000);
+                const tx = await contract.createMarket(
+                    question,
+                    resolutionTime,
+                    { value: ethers.parseEther(liquidity) }
+                );
+                
+                btn.innerHTML = '<div class="spinner"></div> Confirming...';
+                await tx.wait();
+                
+                showToast('Market created! 🔮', 'success');
+                closeCreateModal();
+                loadMarkets();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed: ' + (err.reason || err.message), 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '🚀 Create Market';
+        }
+        
+        async function executeTrade() {
+            const amount = document.getElementById('tradeAmount').value;
+            if (!amount || amount <= 0) {
+                showToast('Please enter an amount', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('tradeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Trading...';
+            
+            try {
+                const tx = currentTrade.isYes
+                    ? await contract.buyYes(currentTrade.marketId, { value: ethers.parseEther(amount) })
+                    : await contract.buyNo(currentTrade.marketId, { value: ethers.parseEther(amount) });
+                
+                btn.innerHTML = '<div class="spinner"></div> Confirming...';
+                await tx.wait();
+                
+                showToast(`Bought ${currentTrade.isYes ? 'YES' : 'NO'} shares! 🎯`, 'success');
+                closeTradeModal();
+                loadMarkets();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed: ' + (err.reason || err.message), 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '🎯 Confirm Trade';
+        }
+        
+        async function claimWinnings(marketId) {
+            if (!userAddress) {
+                showToast('Please connect wallet first', 'error');
+                return;
+            }
+            
+            try {
+                const tx = await contract.claimWinnings(marketId);
+                showToast('Claiming winnings...', 'success');
+                await tx.wait();
+                showToast('Winnings claimed! 💰', 'success');
+                loadMarkets();
+            } catch (err) {
+                showToast('Failed: ' + (err.reason || err.message), 'error');
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastIcon').textContent = type === 'success' ? '✓' : '✗';
+            document.getElementById('toastMsg').textContent = msg;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Init
+        loadMarkets();
+        if (window.ethereum?.selectedAddress) connectWallet();
+    </script>
+</body>
+</html>

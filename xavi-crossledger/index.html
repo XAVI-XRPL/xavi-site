@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAVI CrossLedger — Bridge XRPL Mainnet from EVM</title>
+    <link rel="icon" type="image/png" href="xavi-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0D0A1A;
+            --bg-surface: #15112A;
+            --bg-card: #1E1836;
+            --bg-elevated: #251D45;
+            --primary: #8B5CF6;
+            --primary-light: #A855F7;
+            --primary-dark: #6D28D9;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --accent: #C084FC;
+            --bridge-color: #00D4FF;
+            --bridge-glow: rgba(0, 212, 255, 0.3);
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --border: #2D2550;
+            --border-light: #3D3570;
+            --success: #22C55E;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            --gradient-bridge: linear-gradient(135deg, var(--bridge-color) 0%, var(--primary) 100%);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+        
+        .bg-glow {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 40%),
+                        radial-gradient(circle at 70% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            pointer-events: none;
+            animation: bridgePulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes bridgePulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px;
+            background: rgba(13, 10, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .logo img { height: 40px; }
+        .logo-text { font-weight: 700; font-size: 20px; }
+        .logo-text span { color: var(--bridge-color); }
+        
+        .nav-actions { display: flex; gap: 12px; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        
+        .btn-bridge {
+            background: var(--gradient-bridge);
+            color: white;
+            box-shadow: 0 4px 20px var(--bridge-glow);
+        }
+        
+        .btn-bridge:hover { transform: translateY(-2px); }
+        
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .connect-btn {
+            padding: 12px 24px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .connect-btn.connected {
+            background: var(--bg-surface);
+            border: 1px solid var(--success);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 60px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-top: 20px;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--bridge-color);
+            border-radius: 24px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--bridge-color);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 44px;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+        
+        h1 .gradient {
+            background: var(--gradient-bridge);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* Chain Visual */
+        .chain-bridge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin: 48px 0;
+            padding: 40px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+        }
+        
+        .chain-box {
+            text-align: center;
+            padding: 32px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            min-width: 200px;
+        }
+        
+        .chain-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+        
+        .chain-icon.evm {
+            background: linear-gradient(135deg, #627EEA, #3C5AB8);
+        }
+        
+        .chain-icon.xrpl {
+            background: linear-gradient(135deg, #23292F, #000000);
+        }
+        
+        .chain-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .chain-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .bridge-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .arrow-line {
+            width: 120px;
+            height: 4px;
+            background: var(--gradient-bridge);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .arrow-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: bridgeFlow 2s linear infinite;
+        }
+        
+        @keyframes bridgeFlow {
+            to { left: 200%; }
+        }
+        
+        .arrow-text {
+            font-size: 12px;
+            color: var(--bridge-color);
+            font-weight: 600;
+        }
+        
+        /* Operation Types */
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+        
+        .op-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .op-card:hover {
+            border-color: var(--bridge-color);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px var(--bridge-glow);
+        }
+        
+        .op-card.active {
+            border-color: var(--bridge-color);
+            background: linear-gradient(180deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%);
+        }
+        
+        .op-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-bridge);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 16px;
+        }
+        
+        .op-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .op-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        
+        /* Stats */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-bridge);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        /* Request List */
+        .requests-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .request-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .request-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 20px;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.3s;
+        }
+        
+        .request-item:hover {
+            border-color: var(--border-light);
+        }
+        
+        .request-type {
+            width: 44px;
+            height: 44px;
+            background: var(--gradient-bridge);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .request-details h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .request-details p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .request-amount {
+            text-align: right;
+        }
+        
+        .request-amount-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--bridge-color);
+        }
+        
+        .request-amount-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .request-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        .status-executed {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+        }
+        
+        .status-failed {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 520px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .modal-title { font-size: 24px; font-weight: 700; }
+        
+        .modal-close {
+            background: var(--bg-card);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--bridge-color);
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        @media (max-width: 1024px) {
+            .ops-grid { grid-template-columns: repeat(2, 1fr); }
+            .chain-bridge { flex-direction: column; gap: 20px; }
+            .bridge-arrow { transform: rotate(90deg); }
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 32px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .request-item { grid-template-columns: 1fr; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    
+    <nav>
+        <div class="nav-inner">
+            <a href="https://xavi-site.vercel.app" class="logo">
+                <img src="xavi-logo.png" alt="XAVI">
+                <span class="logo-text">XAVI <span>CrossLedger</span></span>
+            </a>
+            <div class="nav-actions">
+                <button class="connect-btn" id="connectBtn" onclick="connectWallet()">🔗 Connect Wallet</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="hero">
+            <div class="hero-badge">
+                🌉 Cross-Chain Infrastructure
+            </div>
+            <h1>Bridge to <span class="gradient">XRPL Mainnet</span></h1>
+            <p class="subtitle">Execute XRPL mainnet operations directly from EVM smart contracts. Create DEX orders, escrows, payment channels, and trust lines.</p>
+        </div>
+        
+        <div class="chain-bridge">
+            <div class="chain-box">
+                <div class="chain-icon evm">⟠</div>
+                <h3 class="chain-name">XRPL EVM</h3>
+                <p class="chain-sub">Sidechain</p>
+            </div>
+            <div class="bridge-arrow">
+                <div class="arrow-line"></div>
+                <span class="arrow-text">CROSSLEDGER</span>
+            </div>
+            <div class="chain-box">
+                <div class="chain-icon xrpl">✕</div>
+                <h3 class="chain-name">XRPL Mainnet</h3>
+                <p class="chain-sub">Native Ledger</p>
+            </div>
+        </div>
+        
+        <div class="ops-grid">
+            <div class="op-card" onclick="selectOp('dex')" id="op-dex">
+                <div class="op-icon">📊</div>
+                <h3 class="op-name">DEX Orders</h3>
+                <p class="op-desc">Create and manage orders on XRPL's native decentralized exchange</p>
+            </div>
+            <div class="op-card" onclick="selectOp('escrow')" id="op-escrow">
+                <div class="op-icon">🔒</div>
+                <h3 class="op-name">Escrows</h3>
+                <p class="op-desc">Time-locked and condition-based escrow creation</p>
+            </div>
+            <div class="op-card" onclick="selectOp('payment')" id="op-payment">
+                <div class="op-icon">⚡</div>
+                <h3 class="op-name">Payment Channels</h3>
+                <p class="op-desc">High-throughput off-ledger payment channels</p>
+            </div>
+            <div class="op-card" onclick="selectOp('trustline')" id="op-trustline">
+                <div class="op-icon">🤝</div>
+                <h3 class="op-name">Trust Lines</h3>
+                <p class="op-desc">Establish trust lines for issued currencies</p>
+            </div>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalRequests">0</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="pendingRequests">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="executedRequests">0</div>
+                <div class="stat-label">Executed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalVolume">0</div>
+                <div class="stat-label">XRP Volume</div>
+            </div>
+        </div>
+        
+        <div class="requests-section">
+            <div class="section-header">
+                <h2 class="section-title">📋 Bridge Requests</h2>
+                <button class="btn btn-bridge" onclick="openCreateModal()">+ New Request</button>
+            </div>
+            <div class="request-list" id="requestList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🌉</div>
+                    <h3>No bridge requests yet</h3>
+                    <p>Create your first cross-ledger operation!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Request Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">🌉 Create Request</h2>
+                <button class="modal-close" onclick="closeCreateModal()">×</button>
+            </div>
+            
+            <form onsubmit="createRequest(event)" id="requestForm">
+                <div class="form-group">
+                    <label class="form-label">Operation Type</label>
+                    <select class="form-input" id="opType" onchange="updateForm()" required>
+                        <option value="">Select operation...</option>
+                        <option value="dex">DEX Order</option>
+                        <option value="escrow">Escrow</option>
+                        <option value="payment">Payment Channel</option>
+                        <option value="trustline">Trust Line</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">XRPL Destination Address</label>
+                    <input type="text" class="form-input" id="xrplAddress" placeholder="rXXX..." required>
+                    <p class="form-hint">The XRPL mainnet address for this operation</p>
+                </div>
+                
+                <div class="form-group" id="amountGroup">
+                    <label class="form-label">Amount (XRP)</label>
+                    <input type="number" class="form-input" id="amount" placeholder="10" step="0.000001" min="0.000001">
+                </div>
+                
+                <div class="form-group" id="conditionGroup" style="display: none;">
+                    <label class="form-label">Release Condition</label>
+                    <input type="text" class="form-input" id="condition" placeholder="Condition hash or time...">
+                    <p class="form-hint">Optional cryptographic condition for release</p>
+                </div>
+                
+                <div class="form-group" id="currencyGroup" style="display: none;">
+                    <label class="form-label">Currency Code</label>
+                    <input type="text" class="form-input" id="currency" placeholder="USD" maxlength="3">
+                    <p class="form-hint">3-letter currency code for trust line</p>
+                </div>
+                
+                <div class="form-group" id="limitGroup" style="display: none;">
+                    <label class="form-label">Trust Limit</label>
+                    <input type="number" class="form-input" id="trustLimit" placeholder="1000000">
+                </div>
+                
+                <button type="submit" class="btn btn-bridge" id="createBtn" style="width: 100%; justify-content: center; padding: 16px;">
+                    🚀 Submit Request
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMsg">Success!</span>
+    </div>
+
+    <script>
+        const CONTRACT_ADDRESS = '0x7A44A9eE0D6C6BBf25A16c7DcFf424e8476731C2';
+        const CHAIN_ID = 1440000;
+        const RPC_URL = 'https://rpc.xrplevm.org';
+        
+        const ABI = [
+            'function requestDexOrder(string xrplAddress, uint256 amount, string takerGets, string takerPays) external payable returns (uint256)',
+            'function requestEscrow(string xrplAddress, uint256 amount, uint256 finishAfter, string condition) external payable returns (uint256)',
+            'function requestPaymentChannel(string xrplAddress, uint256 amount, uint256 settleDelay) external payable returns (uint256)',
+            'function requestTrustLine(string xrplAddress, string currency, uint256 limit) external returns (uint256)',
+            'function getRequest(uint256 requestId) external view returns (tuple(uint256 id, address requester, uint8 opType, string xrplAddress, uint256 amount, uint8 status, uint256 createdAt, uint256 executedAt, string xrplTxHash))',
+            'function requestCount() external view returns (uint256)',
+            'function relayerFee() external view returns (uint256)',
+            'event RequestCreated(uint256 indexed requestId, address indexed requester, uint8 opType, string xrplAddress)',
+            'event RequestExecuted(uint256 indexed requestId, string xrplTxHash)'
+        ];
+        
+        const OP_TYPES = ['DEX Order', 'Escrow', 'Payment Channel', 'Trust Line'];
+        const OP_ICONS = ['📊', '🔒', '⚡', '🤝'];
+        
+        let provider, signer, contract, userAddress;
+        let allRequests = [];
+        let selectedOp = null;
+        
+        async function connectWallet() {
+            if (!window.ethereum) {
+                showToast('Please install MetaMask!', 'error');
+                return;
+            }
+            
+            try {
+                const chainIdHex = '0x' + CHAIN_ID.toString(16);
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: chainIdHex }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: chainIdHex,
+                                chainName: 'XRPL EVM Sidechain',
+                                nativeCurrency: { name: 'XRP', symbol: 'XRP', decimals: 18 },
+                                rpcUrls: [RPC_URL],
+                                blockExplorerUrls: ['https://explorer.xrplevm.org'],
+                            }],
+                        });
+                    }
+                }
+                
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                
+                const btn = document.getElementById('connectBtn');
+                btn.innerHTML = `✓ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+                btn.classList.add('connected');
+                
+                showToast('Wallet connected!', 'success');
+                loadRequests();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to connect', 'error');
+            }
+        }
+        
+        async function loadRequests() {
+            try {
+                const readProvider = new ethers.JsonRpcProvider(RPC_URL);
+                const readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
+                
+                const count = await readContract.requestCount();
+                document.getElementById('totalRequests').textContent = count.toString();
+                
+                allRequests = [];
+                let pending = 0, executed = 0, volume = 0n;
+                
+                for (let i = 1; i <= Number(count); i++) {
+                    try {
+                        const req = await readContract.getRequest(i);
+                        
+                        allRequests.push({
+                            id: Number(req.id),
+                            requester: req.requester,
+                            opType: Number(req.opType),
+                            xrplAddress: req.xrplAddress,
+                            amount: req.amount,
+                            status: Number(req.status),
+                            createdAt: Number(req.createdAt),
+                            executedAt: Number(req.executedAt),
+                            xrplTxHash: req.xrplTxHash
+                        });
+                        
+                        if (Number(req.status) === 0) pending++;
+                        else if (Number(req.status) === 1) executed++;
+                        volume += req.amount;
+                        
+                    } catch (e) {
+                        console.log(`Request ${i} error:`, e);
+                    }
+                }
+                
+                document.getElementById('pendingRequests').textContent = pending;
+                document.getElementById('executedRequests').textContent = executed;
+                document.getElementById('totalVolume').textContent = parseFloat(ethers.formatEther(volume)).toFixed(1);
+                
+                renderRequests();
+                
+            } catch (err) {
+                console.error('Failed to load requests:', err);
+            }
+        }
+        
+        function renderRequests() {
+            const list = document.getElementById('requestList');
+            
+            if (allRequests.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🌉</div>
+                        <h3>No bridge requests yet</h3>
+                        <p>Create your first cross-ledger operation!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = allRequests.map(r => {
+                const statusClass = r.status === 0 ? 'status-pending' : r.status === 1 ? 'status-executed' : 'status-failed';
+                const statusText = r.status === 0 ? 'Pending' : r.status === 1 ? 'Executed' : 'Failed';
+                const amount = parseFloat(ethers.formatEther(r.amount));
+                const date = new Date(r.createdAt * 1000).toLocaleDateString();
+                
+                return `
+                    <div class="request-item">
+                        <div class="request-type">${OP_ICONS[r.opType]}</div>
+                        <div class="request-details">
+                            <h4>${OP_TYPES[r.opType]} #${r.id}</h4>
+                            <p>${r.xrplAddress.slice(0, 10)}...${r.xrplAddress.slice(-8)}</p>
+                        </div>
+                        <div class="request-amount">
+                            <div class="request-amount-value">${amount.toFixed(2)} XRP</div>
+                            <div class="request-amount-label">${date}</div>
+                        </div>
+                        <span class="request-status ${statusClass}">${statusText}</span>
+                        <a href="https://explorer.xrplevm.org/tx/${r.id}" target="_blank" class="btn btn-secondary" style="padding: 8px 16px;">View</a>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function selectOp(op) {
+            selectedOp = op;
+            document.querySelectorAll('.op-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('op-' + op).classList.add('active');
+            
+            openCreateModal();
+            document.getElementById('opType').value = op;
+            updateForm();
+        }
+        
+        function updateForm() {
+            const op = document.getElementById('opType').value;
+            
+            document.getElementById('amountGroup').style.display = op !== 'trustline' ? 'block' : 'none';
+            document.getElementById('conditionGroup').style.display = op === 'escrow' ? 'block' : 'none';
+            document.getElementById('currencyGroup').style.display = op === 'trustline' ? 'block' : 'none';
+            document.getElementById('limitGroup').style.display = op === 'trustline' ? 'block' : 'none';
+        }
+        
+        function openCreateModal() {
+            if (!userAddress) {
+                showToast('Please connect wallet first', 'error');
+                return;
+            }
+            document.getElementById('createModal').classList.add('show');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+        }
+        
+        async function createRequest(e) {
+            e.preventDefault();
+            
+            const op = document.getElementById('opType').value;
+            const xrplAddr = document.getElementById('xrplAddress').value;
+            const amount = document.getElementById('amount').value || '0';
+            
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Creating...';
+            
+            try {
+                let tx;
+                const value = ethers.parseEther(amount);
+                
+                if (op === 'dex') {
+                    tx = await contract.requestDexOrder(xrplAddr, value, 'XRP', 'USD', { value });
+                } else if (op === 'escrow') {
+                    const finishAfter = Math.floor(Date.now() / 1000) + 86400; // 24h
+                    const condition = document.getElementById('condition').value || '';
+                    tx = await contract.requestEscrow(xrplAddr, value, finishAfter, condition, { value });
+                } else if (op === 'payment') {
+                    tx = await contract.requestPaymentChannel(xrplAddr, value, 3600, { value });
+                } else if (op === 'trustline') {
+                    const currency = document.getElementById('currency').value;
+                    const limit = document.getElementById('trustLimit').value;
+                    tx = await contract.requestTrustLine(xrplAddr, currency, ethers.parseEther(limit));
+                }
+                
+                btn.innerHTML = '<div class="spinner"></div> Confirming...';
+                await tx.wait();
+                
+                showToast('Request created! 🌉', 'success');
+                closeCreateModal();
+                loadRequests();
+                
+            } catch (err) {
+                console.error(err);
+                showToast('Failed: ' + (err.reason || err.message), 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '🚀 Submit Request';
+        }
+        
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastIcon').textContent = type === 'success' ? '✓' : '✗';
+            document.getElementById('toastMsg').textContent = msg;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Init
+        loadRequests();
+        if (window.ethereum?.selectedAddress) connectWallet();
+    </script>
+</body>
+</html>
