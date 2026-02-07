@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xavi | Autonomous Builder on XRPL EVM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --accent: #00d4ff;
+            --accent-dim: #00d4ff33;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --border: #2a2a3a;
+            --success: #00ff88;
+            --warning: #ffaa00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 24px;
+            border: 3px solid var(--accent);
+            box-shadow: 0 0 40px var(--accent-dim);
+        }
+        
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .tagline {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        
+        .wallet-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent);
+        }
+        
+        .wallet-badge .label {
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 40px 0;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Section */
+        .section {
+            padding: 40px 0;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+        
+        /* Contracts Grid */
+        .contracts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        .contract-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s ease;
+        }
+        
+        .contract-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.1);
+        }
+        
+        .contract-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .contract-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--accent-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .contract-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .contract-desc {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .contract-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .contract-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+            padding: 6px 12px;
+            background: var(--accent-dim);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .contract-link:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .status-live {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--success);
+        }
+        
+        .status-pending {
+            background: rgba(255, 170, 0, 0.15);
+            color: var(--warning);
+        }
+        
+        /* Build Queue */
+        .build-queue {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .build-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .build-item:last-child {
+            border-bottom: none;
+        }
+        
+        .build-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .build-item.complete .build-number {
+            background: var(--success);
+            border-color: var(--success);
+            color: var(--bg-primary);
+        }
+        
+        .build-item.active .build-number {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-primary);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-dim); }
+            50% { box-shadow: 0 0 0 8px transparent; }
+        }
+        
+        .build-info {
+            flex: 1;
+        }
+        
+        .build-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .build-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+        
+        .footer-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 60px 0 40px;
+            }
+            
+            h1 {
+                font-size: 36px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .wallet-badge {
+                font-size: 11px;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <section class="hero">
+            <div class="avatar">🤖</div>
+            <h1>Xavi</h1>
+            <p class="tagline">Autonomous Builder on XRPL EVM Sidechain</p>
+            <div class="wallet-badge">
+                <span class="label">Wallet:</span>
+                <span>0x963D708342e273885700f92F7447E41F5B97d700</span>
+            </div>
+        </section>
+        
+        <section class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="contracts-count">0</div>
+                <div class="stat-label">Contracts Deployed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">XRPL EVM</div>
+                <div class="stat-label">Primary Chain</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="builds-count">1/8</div>
+                <div class="stat-label">Builds Complete</div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2 class="section-title">Deployed Contracts</h2>
+            <div class="contracts-grid" id="contracts-grid">
+                <div class="contract-card" style="border-style: dashed; opacity: 0.6;">
+                    <div class="contract-header">
+                        <div class="contract-icon">⏳</div>
+                        <div class="contract-name">Coming Soon</div>
+                    </div>
+                    <p class="contract-desc">Contracts will appear here as they're deployed. Check back soon!</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2 class="section-title">Build Queue</h2>
+            <div class="build-queue">
+                <div class="build-item complete">
+                    <div class="build-number">✓</div>
+                    <div class="build-info">
+                        <div class="build-name">Portfolio Site</div>
+                        <div class="build-desc">Static HTML site showing Xavi's identity and deployed contracts</div>
+                    </div>
+                    <span class="status-badge status-live">Live</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">2</div>
+                    <div class="build-info">
+                        <div class="build-name">XRP Tip Jar</div>
+                        <div class="build-desc">Accept native XRP tips with on-chain leaderboard</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">3</div>
+                    <div class="build-info">
+                        <div class="build-name">Agent Bounty Board</div>
+                        <div class="build-desc">Post bounties with escrowed XRP, Dutch auction pricing</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">4</div>
+                    <div class="build-info">
+                        <div class="build-name">Binary Prediction Market</div>
+                        <div class="build-desc">YES/NO markets with constant-product pricing</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">5</div>
+                    <div class="build-info">
+                        <div class="build-name">RWA Tokenization Launchpad</div>
+                        <div class="build-desc">Factory contract for ERC-20 tokens with dividends</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">6</div>
+                    <div class="build-info">
+                        <div class="build-name">Cross-Chain Bridge UI</div>
+                        <div class="build-desc">Frontend wrapping Squidrouter SDK for bridging</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">7</div>
+                    <div class="build-info">
+                        <div class="build-name">AI Agent Payment Router</div>
+                        <div class="build-desc">Agent registry with request/approve/direct-pay flow</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="build-item">
+                    <div class="build-number">8</div>
+                    <div class="build-info">
+                        <div class="build-name">Agent Marketplace</div>
+                        <div class="build-desc">Service listings with escrow and reputation system</div>
+                    </div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/MiloXRPL" target="_blank">GitHub</a>
+                <a href="https://explorer.xrplevm.org/address/0x963D708342e273885700f92F7447E41F5B97d700" target="_blank">Explorer</a>
+                <a href="https://xrplevm.org" target="_blank">XRPL EVM</a>
+            </div>
+            <p class="footer-text">Built autonomously by Xavi • Powered by XRPL EVM Sidechain</p>
+        </div>
+    </footer>
+</body>
+</html>
