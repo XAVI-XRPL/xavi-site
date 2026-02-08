@@ -414,6 +414,173 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        /* Empty Pool State */
+        .empty-pool-state {
+            margin-top: var(--space-lg);
+            padding: var(--space-xl);
+            background: linear-gradient(135deg, rgba(123, 45, 142, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+            border: 1px dashed var(--xavi-border);
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+        
+        .empty-pool-icon {
+            font-size: 48px;
+            margin-bottom: var(--space-md);
+        }
+        
+        .empty-pool-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--xavi-white);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .empty-pool-desc {
+            font-size: 14px;
+            color: var(--xavi-muted);
+            max-width: 280px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .swap-btn.disabled {
+            background: var(--xavi-charcoal) !important;
+            color: var(--xavi-dim) !important;
+            cursor: not-allowed !important;
+            border: 1px solid var(--xavi-border) !important;
+        }
+        
+        .swap-btn.disabled:hover {
+            transform: none !important;
+        }
+        
+        /* Pools Section */
+        .pools-hero {
+            text-align: center;
+            padding: var(--space-2xl);
+            background: linear-gradient(135deg, rgba(123, 45, 142, 0.15) 0%, rgba(255, 215, 0, 0.08) 100%);
+            border-radius: var(--radius-xl);
+            margin-bottom: var(--space-xl);
+        }
+        
+        .pools-hero-icon {
+            font-size: 56px;
+            margin-bottom: var(--space-md);
+        }
+        
+        .pools-hero-title {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+        }
+        
+        .pools-hero-desc {
+            color: var(--xavi-muted);
+            font-size: 16px;
+            margin-bottom: var(--space-lg);
+        }
+        
+        .suggested-pairs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-lg);
+        }
+        
+        .pair-card {
+            position: relative;
+        }
+        
+        .pair-card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        
+        .pair-icons {
+            display: flex;
+        }
+        
+        .pair-icons .token-icon:last-child {
+            margin-left: -8px;
+        }
+        
+        .pair-name {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .pair-recommended {
+            color: var(--xavi-gold);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .pair-stats {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            margin: var(--space-md) 0;
+            font-size: 14px;
+        }
+        
+        .pair-stat {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .pair-stat-label {
+            color: var(--xavi-dim);
+        }
+        
+        .pair-stat-value {
+            color: var(--xavi-muted);
+        }
+        
+        .pair-status {
+            font-size: 13px;
+            color: var(--xavi-purple-light);
+            margin-bottom: var(--space-md);
+        }
+        
+        /* Add Liquidity Form */
+        .new-pool-notice {
+            margin: var(--space-lg) 0;
+            padding: var(--space-lg);
+            background: linear-gradient(135deg, rgba(0, 200, 255, 0.1) 0%, rgba(123, 45, 142, 0.1) 100%);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: var(--radius-lg);
+        }
+        
+        .new-pool-notice-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-display);
+            font-weight: 600;
+            color: #00c8ff;
+            margin-bottom: var(--space-sm);
+        }
+        
+        .new-pool-notice-text {
+            font-size: 14px;
+            color: var(--xavi-muted);
+            line-height: 1.6;
+        }
+        
+        .new-pool-notice-tip {
+            margin-top: var(--space-sm);
+            font-size: 13px;
+            color: var(--xavi-dim);
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -528,7 +695,7 @@
                         </div>
                     </div>
                     
-                    <!-- Swap Details -->
+                    <!-- Swap Details (shown when liquidity exists) -->
                     <div class="swap-details" id="swapDetails" style="display: none;">
                         <div class="swap-detail-row">
                             <span class="swap-detail-label">Rate</span>
@@ -544,29 +711,205 @@
                         </div>
                     </div>
                     
+                    <!-- Empty Pool State -->
+                    <div class="empty-pool-state" id="emptyPoolState">
+                        <div class="empty-pool-icon">💧</div>
+                        <div class="empty-pool-title">No liquidity available</div>
+                        <div class="empty-pool-desc">
+                            This pair doesn't have a pool yet. Be the first to provide liquidity and earn <span class="text-gold">0.05%</span> on every swap.
+                        </div>
+                        <a href="#pools" class="btn btn-primary btn-sm" onclick="switchToLiquidity()" style="margin-top: var(--space-md);">
+                            Add Liquidity →
+                        </a>
+                    </div>
+                    
                     <button class="btn btn-primary swap-btn" id="swapBtn" onclick="executeSwap()">
                         Connect Wallet
                     </button>
                 </div>
             </div>
             
-            <!-- Pool Stats -->
+            <!-- Global Stats Bar -->
             <div class="pool-stats">
                 <div class="xavi-card-flat pool-stat">
-                    <div class="pool-stat-value">$35,250</div>
-                    <div class="pool-stat-label">Total Liquidity</div>
+                    <div class="pool-stat-value" id="statPools">0</div>
+                    <div class="pool-stat-label">Total Pools</div>
                 </div>
                 <div class="xavi-card-flat pool-stat">
-                    <div class="pool-stat-value">$12,840</div>
+                    <div class="pool-stat-value" id="statTVL">—</div>
+                    <div class="pool-stat-label">Total TVL</div>
+                </div>
+                <div class="xavi-card-flat pool-stat">
+                    <div class="pool-stat-value" id="statVolume">—</div>
                     <div class="pool-stat-label">24h Volume</div>
                 </div>
                 <div class="xavi-card-flat pool-stat">
-                    <div class="pool-stat-value">3</div>
-                    <div class="pool-stat-label">Active Pairs</div>
+                    <div class="pool-stat-value" id="statSwaps">0</div>
+                    <div class="pool-stat-label">Total Swaps</div>
                 </div>
             </div>
         </div>
     </section>
+    
+    <!-- Pools Section -->
+    <section class="section" id="pools" style="display: none;">
+        <div class="container" style="max-width: 900px;">
+            <div class="pools-hero">
+                <div class="pools-hero-icon">💧</div>
+                <h2 class="pools-hero-title">Liquidity Pools</h2>
+                <p class="pools-hero-desc">Provide liquidity. Earn 0.05% on every swap.</p>
+                <button class="btn btn-primary" onclick="openAddLiquidity()">Create New Pool</button>
+            </div>
+            
+            <h3 style="margin-bottom: var(--space-lg); color: var(--xavi-muted);">Suggested Pairs</h3>
+            
+            <div class="suggested-pairs">
+                <!-- XRP/RLUSD - Recommended -->
+                <div class="xavi-card pair-card">
+                    <div class="pair-card-header">
+                        <div class="pair-icons">
+                            <div class="token-icon xrp">X</div>
+                            <div class="token-icon rlusd">R</div>
+                        </div>
+                        <div>
+                            <div class="pair-name">XRP / RLUSD</div>
+                            <div class="pair-recommended">⭐ Recommended</div>
+                        </div>
+                    </div>
+                    <div class="pair-stats">
+                        <div class="pair-stat">
+                            <span class="pair-stat-label">Fee</span>
+                            <span class="pair-stat-value">0.05%</span>
+                        </div>
+                        <div class="pair-stat">
+                            <span class="pair-stat-label">TVL</span>
+                            <span class="pair-stat-value">—</span>
+                        </div>
+                    </div>
+                    <div class="pair-status">Status: No pool yet</div>
+                    <button class="btn btn-primary btn-sm" onclick="openAddLiquidity('XRP', 'RLUSD')" style="width: 100%;">Create Pool →</button>
+                </div>
+                
+                <!-- XRP/USDC -->
+                <div class="xavi-card pair-card">
+                    <div class="pair-card-header">
+                        <div class="pair-icons">
+                            <div class="token-icon xrp">X</div>
+                            <div class="token-icon usdc">U</div>
+                        </div>
+                        <div>
+                            <div class="pair-name">XRP / USDC</div>
+                        </div>
+                    </div>
+                    <div class="pair-stats">
+                        <div class="pair-stat">
+                            <span class="pair-stat-label">Fee</span>
+                            <span class="pair-stat-value">0.05%</span>
+                        </div>
+                        <div class="pair-stat">
+                            <span class="pair-stat-label">TVL</span>
+                            <span class="pair-stat-value">—</span>
+                        </div>
+                    </div>
+                    <div class="pair-status">Status: No pool yet</div>
+                    <button class="btn btn-primary btn-sm" onclick="openAddLiquidity('XRP', 'USDC')" style="width: 100%;">Create Pool →</button>
+                </div>
+                
+                <!-- RLUSD/USDC -->
+                <div class="xavi-card pair-card">
+                    <div class="pair-card-header">
+                        <div class="pair-icons">
+                            <div class="token-icon rlusd">R</div>
+                            <div class="token-icon usdc">U</div>
+                        </div>
+                        <div>
+                            <div class="pair-name">RLUSD / USDC</div>
+                        </div>
+                    </div>
+                    <div class="pair-stats">
+                        <div class="pair-stat">
+                            <span class="pair-stat-label">Fee</span>
+                            <span class="pair-stat-value">0.05%</span>
+                        </div>
+                        <div class="pair-stat">
+                            <span class="pair-stat-label">TVL</span>
+                            <span class="pair-stat-value">—</span>
+                        </div>
+                    </div>
+                    <div class="pair-status">Status: No pool yet</div>
+                    <button class="btn btn-primary btn-sm" onclick="openAddLiquidity('RLUSD', 'USDC')" style="width: 100%;">Create Pool →</button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Add Liquidity Modal -->
+    <div class="modal-overlay" id="liquidityModal">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-header">
+                <span class="modal-title">Add Liquidity</span>
+                <div class="modal-close" onclick="closeLiquidityModal()">
+                    <i data-lucide="x"></i>
+                </div>
+            </div>
+            <div style="padding: var(--space-lg);">
+                <!-- Token A -->
+                <div class="token-input-box" style="margin-bottom: var(--space-md);">
+                    <div class="token-input-header">
+                        <span class="token-input-label">Token A</span>
+                        <span class="token-balance">Balance: <span id="liqBalanceA">0.00</span></span>
+                    </div>
+                    <div class="token-input-row">
+                        <input type="text" class="token-amount" id="liqAmountA" placeholder="0.0">
+                        <div class="token-selector" id="liqTokenA">
+                            <div class="token-icon xrp">X</div>
+                            <span class="token-symbol">XRP</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Token B -->
+                <div class="token-input-box">
+                    <div class="token-input-header">
+                        <span class="token-input-label">Token B</span>
+                        <span class="token-balance">Balance: <span id="liqBalanceB">0.00</span></span>
+                    </div>
+                    <div class="token-input-row">
+                        <input type="text" class="token-amount" id="liqAmountB" placeholder="0.0">
+                        <div class="token-selector" id="liqTokenB">
+                            <div class="token-icon rlusd">R</div>
+                            <span class="token-symbol">RLUSD</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- New Pool Notice -->
+                <div class="new-pool-notice" id="newPoolNotice">
+                    <div class="new-pool-notice-header">
+                        <i data-lucide="info" style="width: 18px;"></i>
+                        You are creating a new pool
+                    </div>
+                    <div class="new-pool-notice-text">
+                        You are the first to provide liquidity for this pair. The ratio you set will determine the initial price.
+                    </div>
+                    <div class="new-pool-notice-tip">
+                        💡 Tip: Use market price from CoinGecko as your guide.
+                    </div>
+                </div>
+                
+                <div style="margin-top: var(--space-lg); padding: var(--space-md); background: var(--xavi-charcoal); border-radius: var(--radius-md);">
+                    <div class="swap-detail-row">
+                        <span class="swap-detail-label">Initial Price</span>
+                        <span class="swap-detail-value" id="initialPrice">1 XRP = — RLUSD</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary swap-btn" id="addLiqBtn" onclick="addLiquidity()" style="margin-top: var(--space-lg);">
+                    Create Pool & Add Liquidity
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Token Modal -->
     <div class="modal-overlay" id="tokenModal">
@@ -767,6 +1110,104 @@
             toast.className = `toast ${type} show`;
             setTimeout(() => toast.classList.remove('show'), 2500);
         }
+        
+        // Check if pool has liquidity (simulated - would check contract in production)
+        let poolHasLiquidity = false;
+        
+        function checkPoolLiquidity() {
+            // In production, this would call the factory to check if pair exists
+            // and check reserves to see if there's liquidity
+            const emptyState = document.getElementById('emptyPoolState');
+            const swapDetails = document.getElementById('swapDetails');
+            const swapBtn = document.getElementById('swapBtn');
+            
+            if (!poolHasLiquidity) {
+                emptyState.style.display = 'block';
+                swapDetails.style.display = 'none';
+                swapBtn.textContent = 'No Liquidity';
+                swapBtn.classList.add('disabled');
+            } else {
+                emptyState.style.display = 'none';
+                swapBtn.classList.remove('disabled');
+            }
+        }
+        
+        // Tab switching
+        document.querySelectorAll('.swap-tab').forEach((tab, idx) => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.swap-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                if (idx === 1) {
+                    // Switch to Liquidity/Pools view
+                    document.getElementById('pools').style.display = 'block';
+                    document.querySelector('.swap-container').style.display = 'none';
+                } else {
+                    document.getElementById('pools').style.display = 'none';
+                    document.querySelector('.swap-container').style.display = 'block';
+                }
+            });
+        });
+        
+        // Also handle navbar links
+        document.querySelectorAll('.navbar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                document.querySelectorAll('.navbar-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                if (href === '#pools') {
+                    document.getElementById('pools').style.display = 'block';
+                    document.querySelector('.swap-container').style.display = 'none';
+                } else {
+                    document.getElementById('pools').style.display = 'none';
+                    document.querySelector('.swap-container').style.display = 'block';
+                }
+            });
+        });
+        
+        function switchToLiquidity() {
+            document.querySelectorAll('.swap-tab')[1].click();
+        }
+        
+        // Liquidity Modal
+        function openAddLiquidity(tokenA = 'XRP', tokenB = 'RLUSD') {
+            document.getElementById('liquidityModal').classList.add('show');
+            // Pre-fill tokens based on params
+            lucide.createIcons();
+        }
+        
+        function closeLiquidityModal() {
+            document.getElementById('liquidityModal').classList.remove('show');
+        }
+        
+        function addLiquidity() {
+            if (!userAddress) {
+                connectWallet();
+                return;
+            }
+            showToast('Pool creation coming soon! Liquidity seeding in progress.');
+        }
+        
+        // Calculate initial price
+        document.getElementById('liqAmountA')?.addEventListener('input', updateInitialPrice);
+        document.getElementById('liqAmountB')?.addEventListener('input', updateInitialPrice);
+        
+        function updateInitialPrice() {
+            const amtA = parseFloat(document.getElementById('liqAmountA').value) || 0;
+            const amtB = parseFloat(document.getElementById('liqAmountB').value) || 0;
+            
+            if (amtA > 0 && amtB > 0) {
+                const price = (amtB / amtA).toFixed(4);
+                document.getElementById('initialPrice').textContent = `1 XRP = ${price} RLUSD`;
+            } else {
+                document.getElementById('initialPrice').textContent = '1 XRP = — RLUSD';
+            }
+        }
+        
+        // Initialize
+        checkPoolLiquidity();
     </script>
 </body>
 </html>

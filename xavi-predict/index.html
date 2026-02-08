@@ -630,8 +630,16 @@
         
         <div class="tabs">
             <button class="tab active" onclick="filterMarkets('all')">All Markets</button>
-            <button class="tab" onclick="filterMarkets('active')">Active</button>
-            <button class="tab" onclick="filterMarkets('resolved')">Resolved</button>
+            <button class="tab" onclick="filterMarkets('xrpl')" style="border-left: 3px solid #22C55E;">XRPL Ecosystem</button>
+            <button class="tab" onclick="filterMarkets('ai')" style="border-left: 3px solid #8B5CF6;">AI Agents</button>
+            <button class="tab" onclick="filterMarkets('crypto')" style="border-left: 3px solid #F59E0B;">Crypto Markets</button>
+        </div>
+        
+        <div class="sort-options" style="margin-bottom: 20px; display: flex; gap: 12px; align-items: center;">
+            <span style="color: var(--text-muted); font-size: 14px;">Sort by:</span>
+            <button class="sort-btn active" onclick="sortMarkets('ending')" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; color: var(--text-secondary); cursor: pointer; font-size: 13px;">Ending Soon</button>
+            <button class="sort-btn" onclick="sortMarkets('volume')" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; color: var(--text-secondary); cursor: pointer; font-size: 13px;">Highest Volume</button>
+            <button class="sort-btn" onclick="sortMarkets('newest')" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; color: var(--text-secondary); cursor: pointer; font-size: 13px;">Newest</button>
         </div>
         
         <div class="market-grid" id="marketGrid">
@@ -855,6 +863,18 @@
             let filtered = allMarkets;
             if (currentFilter === 'active') filtered = allMarkets.filter(m => !m.resolved);
             else if (currentFilter === 'resolved') filtered = allMarkets.filter(m => m.resolved);
+            else if (currentFilter === 'xrpl') filtered = allMarkets.filter(m => getCategory(m.question) === 'xrpl');
+            else if (currentFilter === 'ai') filtered = allMarkets.filter(m => getCategory(m.question) === 'ai');
+            else if (currentFilter === 'crypto') filtered = allMarkets.filter(m => getCategory(m.question) === 'crypto');
+            
+            // Apply sorting
+            if (currentSort === 'ending') {
+                filtered = [...filtered].sort((a, b) => a.resolutionTime - b.resolutionTime);
+            } else if (currentSort === 'volume') {
+                filtered = [...filtered].sort((a, b) => Number(b.totalVolume) - Number(a.totalVolume));
+            } else if (currentSort === 'newest') {
+                filtered = [...filtered].sort((a, b) => b.id - a.id);
+            }
             
             if (filtered.length === 0) {
                 grid.innerHTML = `
@@ -875,13 +895,17 @@
                 const deadline = new Date(m.resolutionTime * 1000);
                 const timeLeft = deadline - Date.now();
                 const daysLeft = Math.max(0, Math.ceil(timeLeft / 86400000));
+                const category = getCategory(m.question);
+                const catInfo = getCategoryLabel(category);
                 
                 return `
                     <div class="market-card">
                         <div class="market-header">
-                            <span class="market-id">#${m.id}</span>
+                            <span style="display: inline-flex; align-items: center; gap: 8px;">
+                                <span style="background: ${catInfo.color}22; color: ${catInfo.color}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">${catInfo.name}</span>
+                            </span>
                             <span class="market-status ${m.resolved ? 'status-resolved' : 'status-active'}">
-                                ${m.resolved ? (m.yesWins ? '✓ YES Won' : '✗ NO Won') : 'Active'}
+                                ${m.resolved ? (m.yesWins ? '✓ YES Won' : '✗ NO Won') : '🟢 Open'}
                             </span>
                         </div>
                         <h3 class="market-question">${escapeHtml(m.question)}</h3>
@@ -929,9 +953,36 @@
             }).join('');
         }
         
+        let currentSort = 'ending';
+        
+        function getCategory(question) {
+            const q = question.toLowerCase();
+            if (q.includes('xrpl') || q.includes('xrp') || q.includes('rlusd') || q.includes('ripple')) return 'xrpl';
+            if (q.includes('ai agent') || q.includes('erc-8004') || q.includes('autonomous')) return 'ai';
+            if (q.includes('bitcoin') || q.includes('sec') || q.includes('etf') || q.includes('legislation') || q.includes('solana')) return 'crypto';
+            return 'other';
+        }
+        
+        function getCategoryLabel(cat) {
+            const labels = {
+                'xrpl': { name: 'XRPL Ecosystem', color: '#22C55E' },
+                'ai': { name: 'AI Agents', color: '#8B5CF6' },
+                'crypto': { name: 'Crypto Markets', color: '#F59E0B' },
+                'other': { name: 'Other', color: '#94A3B8' }
+            };
+            return labels[cat] || labels.other;
+        }
+        
         function filterMarkets(filter) {
             currentFilter = filter;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMarkets();
+        }
+        
+        function sortMarkets(sort) {
+            currentSort = sort;
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             renderMarkets();
         }
