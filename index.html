@@ -67,14 +67,19 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 5;
         }
         
         .hero-mascot {
             width: 440px;
             max-width: 100%;
             position: relative;
-            z-index: 2;
+            z-index: 10 !important;
             filter: drop-shadow(0 20px 40px rgba(74, 18, 89, 0.4));
+        }
+        
+        .mascot-glow, .mascot-ring {
+            z-index: 1 !important;
         }
         
         /* Rotating text container */
