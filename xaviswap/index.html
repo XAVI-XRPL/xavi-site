@@ -604,8 +604,8 @@
                     <div class="token-input-row">
                         <input type="number" class="token-amount" id="outputAmount" placeholder="0" readonly>
                         <div class="token-select" onclick="openTokenSelect('output')">
-                            <div class="token-icon" id="outputIcon">W</div>
-                            <span class="token-symbol" id="outputSymbol">WXRP</span>
+                            <div class="token-icon" id="outputIcon">$</div>
+                            <span class="token-symbol" id="outputSymbol">RLUSD</span>
                             <span class="token-select-arrow">▼</span>
                         </div>
                     </div>
@@ -693,6 +693,60 @@
         <span id="toastIcon">✓</span>
         <span id="toastMsg">Success!</span>
     </div>
+    
+    <!-- Token Selector Modal -->
+    <div class="modal-overlay" id="tokenModalOverlay" onclick="closeTokenSelect()"></div>
+    <div class="settings-modal" id="tokenModal" style="max-height: 70vh; overflow-y: auto;">
+        <h3 class="settings-title">Select Token</h3>
+        <div id="tokenList"></div>
+    </div>
+    
+    <style>
+        .token-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .token-item:hover { 
+            background: var(--bg-elevated); 
+            border-color: var(--primary);
+        }
+        .token-item.featured {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
+        }
+        .token-item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .token-item-icon.rlusd {
+            background: linear-gradient(135deg, #22C55E, #16A34A);
+        }
+        .token-item-info { flex: 1; }
+        .token-item-name { font-weight: 600; font-size: 16px; }
+        .token-item-balance { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .featured-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            background: var(--primary);
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
 
     <script>
         // Contract addresses
@@ -726,14 +780,19 @@
         let slippage = 1; // 1%
         let deadline = 20; // 20 minutes
         
+        // RLUSD Contract (TestRLUSD for development)
+        const RLUSD_ADDRESS = '0x6B906eaf5858c2b7F7D4C77eCb4112745B38afEb';
+        
         // Token list
         const TOKENS = {
-            'XRP': { symbol: 'XRP', address: null, icon: 'X', native: true },
-            'WXRP': { symbol: 'WXRP', address: WXRP_ADDRESS, icon: 'W' }
+            'XRP': { symbol: 'XRP', address: null, icon: 'X', native: true, decimals: 18 },
+            'WXRP': { symbol: 'WXRP', address: WXRP_ADDRESS, icon: 'W', decimals: 18 },
+            'RLUSD': { symbol: 'RLUSD', address: RLUSD_ADDRESS, icon: '$', decimals: 18, featured: true }
         };
         
+        // Default to XRP/RLUSD pair (featured pair!)
         let inputToken = TOKENS.XRP;
-        let outputToken = TOKENS.WXRP;
+        let outputToken = TOKENS.RLUSD;
         
         async function connectWallet() {
             if (!window.ethereum) {
@@ -1005,9 +1064,80 @@
             }
         }
         
+        let tokenSelectType = null;
+        
         function openTokenSelect(type) {
-            // TODO: Token selector modal
-            showToast('Token selector coming soon', 'success');
+            tokenSelectType = type;
+            const tokenList = document.getElementById('tokenList');
+            tokenList.innerHTML = '';
+            
+            // Build token list
+            Object.values(TOKENS).forEach(token => {
+                const item = document.createElement('div');
+                item.className = 'token-item' + (token.featured ? ' featured' : '');
+                item.onclick = () => selectToken(token);
+                
+                const iconClass = token.symbol === 'RLUSD' ? 'token-item-icon rlusd' : 'token-item-icon';
+                
+                item.innerHTML = `
+                    <div class="${iconClass}">${token.icon}</div>
+                    <div class="token-item-info">
+                        <div class="token-item-name">${token.symbol}</div>
+                        <div class="token-item-balance">Balance: <span id="balance_${token.symbol}">-</span></div>
+                    </div>
+                    ${token.featured ? '<span class="featured-badge">⭐ FEATURED</span>' : ''}
+                `;
+                tokenList.appendChild(item);
+            });
+            
+            document.getElementById('tokenModalOverlay').classList.add('show');
+            document.getElementById('tokenModal').classList.add('show');
+            
+            // Load balances
+            if (userAddress) loadTokenBalances();
+        }
+        
+        function closeTokenSelect() {
+            document.getElementById('tokenModalOverlay').classList.remove('show');
+            document.getElementById('tokenModal').classList.remove('show');
+        }
+        
+        async function loadTokenBalances() {
+            if (!provider || !userAddress) return;
+            
+            for (const token of Object.values(TOKENS)) {
+                const balEl = document.getElementById('balance_' + token.symbol);
+                if (!balEl) continue;
+                
+                try {
+                    if (token.native) {
+                        const bal = await provider.getBalance(userAddress);
+                        balEl.textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
+                    } else {
+                        const contract = new ethers.Contract(token.address, WXRP_ABI, provider);
+                        const bal = await contract.balanceOf(userAddress);
+                        balEl.textContent = parseFloat(ethers.formatEther(bal)).toFixed(4);
+                    }
+                } catch (e) {
+                    balEl.textContent = '0';
+                }
+            }
+        }
+        
+        function selectToken(token) {
+            if (tokenSelectType === 'input') {
+                inputToken = token;
+                document.getElementById('inputSymbol').textContent = token.symbol;
+                document.getElementById('inputIcon').textContent = token.icon;
+            } else {
+                outputToken = token;
+                document.getElementById('outputSymbol').textContent = token.symbol;
+                document.getElementById('outputIcon').textContent = token.icon;
+            }
+            
+            closeTokenSelect();
+            updateBalances();
+            calculateOutput();
         }
         
         function openAddLiquidity() {

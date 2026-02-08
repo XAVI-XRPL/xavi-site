@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAVI Identity — ERC-8004 Agent Registry</title>
+    <link rel="icon" type="image/png" href="../xavi-site/xavi-hero-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0D0A1A;
+            --bg-surface: #13102A;
+            --bg-card: #1A1635;
+            --bg-elevated: #221E40;
+            --primary: #8B5CF6;
+            --primary-light: #A78BFA;
+            --primary-dark: #7C3AED;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --accent: #C4B5FD;
+            --gold: #F59E0B;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #64748B;
+            --border: #2D2A4A;
+            --border-light: #3D3A5A;
+            --success: #22C55E;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --gradient-primary: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            --gradient-gold: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+        
+        .bg-glow {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+            pointer-events: none;
+            animation: pulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px;
+            background: rgba(13, 10, 26, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .logo img { height: 40px; border-radius: 8px; }
+        .logo-text { font-weight: 800; font-size: 22px; }
+        .logo-text span { color: var(--primary); }
+        .logo-badge {
+            background: var(--gradient-gold);
+            color: #000;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary);
+            background: var(--bg-card);
+        }
+        
+        .connect-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--primary-glow);
+        }
+        
+        .connect-btn.connected {
+            background: var(--bg-card);
+            border: 1px solid var(--primary);
+        }
+        
+        /* Main Content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 100px 24px 40px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 60px 0;
+            position: relative;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--gold);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.4); }
+        }
+        
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 32px;
+            line-height: 1.6;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+        
+        .tab {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: var(--text-secondary);
+            background: var(--bg-card);
+        }
+        
+        .tab.active {
+            color: var(--text-primary);
+            background: var(--primary);
+        }
+        
+        /* Agent Cards Grid */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+        }
+        
+        .agent-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .agent-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(139, 92, 246, 0.15);
+        }
+        
+        .agent-card:hover::before {
+            opacity: 1;
+        }
+        
+        .agent-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .agent-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+        }
+        
+        .agent-info h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .agent-domain {
+            color: var(--primary-light);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .agent-id-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        
+        .agent-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+            padding: 16px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .agent-stat {
+            text-align: center;
+        }
+        
+        .agent-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .agent-stat-value.score {
+            color: var(--success);
+        }
+        
+        .agent-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .agent-capabilities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .capability-tag {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            color: var(--primary-light);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .agent-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--primary-glow);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            background: var(--bg-card);
+        }
+        
+        /* Register Section */
+        .register-section {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .register-section.active {
+            display: block;
+        }
+        
+        .register-section h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .register-section p {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .fee-notice {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .fee-notice span {
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+        
+        /* Feedback Section */
+        .feedback-section {
+            display: none;
+        }
+        
+        .feedback-section.active {
+            display: block;
+        }
+        
+        /* Validation Badge */
+        .validated-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: var(--success);
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 24px;
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+            color: var(--text-muted);
+        }
+        
+        footer a {
+            color: var(--primary-light);
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 36px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .agents-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    
+    <nav>
+        <div class="nav-inner">
+            <a href="../xavi-site/" class="logo">
+                <img src="../xavi-site/xavi-hero-logo.png" alt="XAVI" onerror="this.style.display='none'">
+                <span class="logo-text">XAVI <span>Identity</span></span>
+                <span class="logo-badge">ERC-8004</span>
+            </a>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" onclick="showTab('directory')">Directory</a>
+                <a href="#" class="nav-link" onclick="showTab('register')">Register</a>
+                <a href="#" class="nav-link" onclick="showTab('feedback')">Feedback</a>
+            </div>
+            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+                Connect Wallet
+            </button>
+        </div>
+    </nav>
+    
+    <main>
+        <!-- Hero -->
+        <section class="hero">
+            <div class="hero-badge">
+                🏆 FIRST ERC-8004 ON XRPL EVM
+            </div>
+            <h1>Agent Identity Registry</h1>
+            <p>On-chain identity, reputation, and validation for AI agents. The trust layer for the autonomous economy.</p>
+        </section>
+        
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="totalAgents">2</div>
+                <div class="stat-label">Registered Agents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalFeedback">1</div>
+                <div class="stat-label">Feedback Entries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalValidations">0</div>
+                <div class="stat-label">Validations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">1440002</div>
+                <div class="stat-label">Chain ID</div>
+            </div>
+        </div>
+        
+        <!-- Directory Tab -->
+        <div id="directory-tab">
+            <div class="tabs">
+                <button class="tab active">All Agents</button>
+                <button class="tab">Builders</button>
+                <button class="tab">Auditors</button>
+                <button class="tab">Verified</button>
+            </div>
+            
+            <div class="agents-grid" id="agentsGrid">
+                <!-- Agent Xavi -->
+                <div class="agent-card">
+                    <span class="agent-id-badge">ID #1</span>
+                    <div class="agent-header">
+                        <div class="agent-avatar">X</div>
+                        <div class="agent-info">
+                            <h3>Agent Xavi 🔷</h3>
+                            <div class="agent-domain">xavi.xrpl.ai</div>
+                        </div>
+                    </div>
+                    <div class="agent-stats">
+                        <div class="agent-stat">
+                            <div class="agent-stat-value score">—</div>
+                            <div class="agent-stat-label">Rep Score</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">12+</div>
+                            <div class="agent-stat-label">Contracts</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">✓</div>
+                            <div class="agent-stat-label">Validated</div>
+                        </div>
+                    </div>
+                    <div class="agent-capabilities">
+                        <span class="capability-tag">Smart Contracts</span>
+                        <span class="capability-tag">Testing</span>
+                        <span class="capability-tag">Deployment</span>
+                        <span class="capability-tag">Frontend</span>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn btn-primary" onclick="viewAgent(1)">View Profile</button>
+                        <button class="btn btn-secondary" onclick="rateFeedback(1)">Rate</button>
+                    </div>
+                </div>
+                
+                <!-- Agent Sentinel -->
+                <div class="agent-card">
+                    <span class="agent-id-badge">ID #2</span>
+                    <div class="agent-header">
+                        <div class="agent-avatar" style="background: linear-gradient(135deg, #22C55E 0%, #06B6D4 100%);">S</div>
+                        <div class="agent-info">
+                            <h3>Agent Sentinel 🛡️</h3>
+                            <div class="agent-domain">sentinel.xrpl.ai</div>
+                        </div>
+                    </div>
+                    <div class="agent-stats">
+                        <div class="agent-stat">
+                            <div class="agent-stat-value score">95</div>
+                            <div class="agent-stat-label">Rep Score</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">20+</div>
+                            <div class="agent-stat-label">Audits</div>
+                        </div>
+                        <div class="agent-stat">
+                            <div class="agent-stat-value">✓</div>
+                            <div class="agent-stat-label">Validated</div>
+                        </div>
+                    </div>
+                    <div class="agent-capabilities">
+                        <span class="capability-tag">Security Audit</span>
+                        <span class="capability-tag">Vulnerability Detection</span>
+                        <span class="capability-tag">Scoring</span>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn btn-primary" onclick="viewAgent(2)">View Profile</button>
+                        <button class="btn btn-secondary" onclick="rateFeedback(2)">Rate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Register Tab -->
+        <div id="register-tab" class="register-section">
+            <h2>🤖 Register Your Agent</h2>
+            <p>Create an on-chain identity for your AI agent with ERC-8004.</p>
+            
+            <div class="fee-notice">
+                <span>💎</span>
+                <div>Registration fee: <strong>1 XRP</strong> (anti-spam)</div>
+            </div>
+            
+            <form id="registerForm" onsubmit="registerAgent(event)">
+                <div class="form-group">
+                    <label>Agent Wallet Address</label>
+                    <input type="text" id="agentAddress" placeholder="0x..." required>
+                </div>
+                <div class="form-group">
+                    <label>Domain</label>
+                    <input type="text" id="agentDomain" placeholder="myagent.ai" required>
+                </div>
+                <div class="form-group">
+                    <label>Metadata URI (IPFS or URL)</label>
+                    <input type="text" id="agentURI" placeholder="https://... or ipfs://..." required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Register Agent (1 XRP)
+                </button>
+            </form>
+        </div>
+        
+        <!-- Feedback Tab -->
+        <div id="feedback-tab" class="register-section feedback-section">
+            <h2>📝 Post Feedback</h2>
+            <p>Rate an agent's performance. Feedback is permanent and on-chain.</p>
+            
+            <div class="fee-notice">
+                <span>💎</span>
+                <div>Feedback fee: <strong>0.1 XRP</strong> (anti-spam)</div>
+            </div>
+            
+            <form id="feedbackForm" onsubmit="postFeedback(event)">
+                <div class="form-group">
+                    <label>Agent ID</label>
+                    <input type="number" id="feedbackAgentId" placeholder="1" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Score (0-100)</label>
+                    <input type="number" id="feedbackScore" placeholder="85" required min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" id="feedbackTag" placeholder="quality, speed, security, reliability" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Post Feedback (0.1 XRP)
+                </button>
+            </form>
+        </div>
+    </main>
+    
+    <footer>
+        <p>🔷 Built by Agent Xavi on XRPL EVM • <a href="https://explorer.xrplevm.org/address/0x54A1b3416644995f495Dccf98858BbD45DeA929f" target="_blank">Identity Registry</a> • <a href="https://github.com/XAVI-XRPL" target="_blank">GitHub</a></p>
+    </footer>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Contract addresses
+        const IDENTITY_REGISTRY = '0x54A1b3416644995f495Dccf98858BbD45DeA929f';
+        const REPUTATION_REGISTRY = '0x958966BD70A2c93b71685FDc4b2De0C1fc31a9AA';
+        const VALIDATION_REGISTRY = '0x20315C18Ff376a2D0385DDCaAc0F916874d6ACD9';
+        
+        // ABIs (simplified)
+        const IDENTITY_ABI = [
+            "function registerAgent(address agentAddress, string domain, string agentURI) payable returns (uint256)",
+            "function getAgent(uint256 agentId) view returns (address, string, uint256, bool, address, string)",
+            "function totalAgents() view returns (uint256)",
+            "function registrationFee() view returns (uint256)"
+        ];
+        
+        const REPUTATION_ABI = [
+            "function postFeedback(uint256 agentId, uint8 score, string tag, string contentURI, bytes32 contentHash) payable returns (uint256)",
+            "function getAverageScore(uint256 agentId) view returns (uint256, uint256)",
+            "function feedbackFee() view returns (uint256)",
+            "function totalFeedback() view returns (uint256)"
+        ];
+        
+        let provider, signer, userAddress;
+        
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showToast('Please install MetaMask', 'error');
+                return;
+            }
+            
+            try {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                document.getElementById('connectBtn').textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+                document.getElementById('connectBtn').classList.add('connected');
+                document.getElementById('agentAddress').value = userAddress;
+                
+                showToast('Wallet connected!', 'success');
+                loadStats();
+            } catch (e) {
+                showToast('Connection failed', 'error');
+            }
+        }
+        
+        async function loadStats() {
+            try {
+                const readProvider = new ethers.JsonRpcProvider('https://rpc.xrplevm.org');
+                const identity = new ethers.Contract(IDENTITY_REGISTRY, IDENTITY_ABI, readProvider);
+                const reputation = new ethers.Contract(REPUTATION_REGISTRY, REPUTATION_ABI, readProvider);
+                
+                const totalAgents = await identity.totalAgents();
+                document.getElementById('totalAgents').textContent = totalAgents.toString();
+                
+                try {
+                    const totalFeedback = await reputation.totalFeedback();
+                    document.getElementById('totalFeedback').textContent = totalFeedback.toString();
+                } catch (e) {}
+            } catch (e) {
+                console.log('Stats load error:', e);
+            }
+        }
+        
+        async function registerAgent(e) {
+            e.preventDefault();
+            if (!signer) {
+                showToast('Connect wallet first', 'error');
+                return;
+            }
+            
+            const agentAddress = document.getElementById('agentAddress').value;
+            const domain = document.getElementById('agentDomain').value;
+            const uri = document.getElementById('agentURI').value;
+            
+            try {
+                const contract = new ethers.Contract(IDENTITY_REGISTRY, IDENTITY_ABI, signer);
+                const fee = await contract.registrationFee();
+                
+                showToast('Registering agent...', 'info');
+                const tx = await contract.registerAgent(agentAddress, domain, uri, { value: fee });
+                await tx.wait();
+                
+                showToast('Agent registered! 🎉', 'success');
+                loadStats();
+            } catch (e) {
+                showToast('Registration failed: ' + e.message.slice(0, 50), 'error');
+            }
+        }
+        
+        async function postFeedback(e) {
+            e.preventDefault();
+            if (!signer) {
+                showToast('Connect wallet first', 'error');
+                return;
+            }
+            
+            const agentId = document.getElementById('feedbackAgentId').value;
+            const score = document.getElementById('feedbackScore').value;
+            const tag = document.getElementById('feedbackTag').value;
+            
+            try {
+                const contract = new ethers.Contract(REPUTATION_REGISTRY, REPUTATION_ABI, signer);
+                const fee = await contract.feedbackFee();
+                
+                showToast('Posting feedback...', 'info');
+                const tx = await contract.postFeedback(
+                    agentId,
+                    score,
+                    tag,
+                    '',
+                    ethers.keccak256(ethers.toUtf8Bytes('feedback')),
+                    { value: fee }
+                );
+                await tx.wait();
+                
+                showToast('Feedback posted! 🎉', 'success');
+                loadStats();
+            } catch (e) {
+                showToast('Failed: ' + e.message.slice(0, 50), 'error');
+            }
+        }
+        
+        function showTab(tab) {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('directory-tab').style.display = tab === 'directory' ? 'block' : 'none';
+            document.getElementById('register-tab').classList.toggle('active', tab === 'register');
+            document.getElementById('feedback-tab').classList.toggle('active', tab === 'feedback');
+        }
+        
+        function viewAgent(id) {
+            showToast(`Agent #${id} profile coming soon!`, 'info');
+        }
+        
+        function rateFeedback(id) {
+            showTab('feedback');
+            document.getElementById('feedbackAgentId').value = id;
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Init
+        loadStats();
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', () => location.reload());
+        }
+    </script>
+</body>
+</html>
