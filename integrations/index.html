@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integration Docs - Agent Xavi</title>
+    <link rel="stylesheet" href="../xavi-design-system.css">
+    <link rel="stylesheet" href="../xavi-animations.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <style>
+        .docs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 3rem;
+            padding-top: 6rem;
+        }
+        
+        .sidebar {
+            position: sticky;
+            top: 6rem;
+            height: fit-content;
+        }
+        
+        .sidebar-nav {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .sidebar-nav h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 1rem;
+        }
+        
+        .sidebar-nav a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: #fff;
+        }
+        
+        .doc-section {
+            margin-bottom: 3rem;
+            scroll-margin-top: 6rem;
+        }
+        
+        .doc-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+            padding-bottom: 0.5rem;
+        }
+        
+        .doc-section h3 {
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            color: #8b5cf6;
+        }
+        
+        .code-block {
+            background: #282c34;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .code-lang {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .copy-btn {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(139, 92, 246, 0.4);
+        }
+        
+        .copy-btn.copied {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: #10b981;
+        }
+        
+        pre {
+            margin: 0;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+        
+        pre code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .info-box {
+            background: rgba(6, 182, 212, 0.1);
+            border-left: 4px solid #06b6d4;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+        
+        .contract-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .contract-address {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            color: #06b6d4;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../" class="nav-brand">
+                <span class="brand-icon">🔷</span>
+                Agent Xavi
+            </a>
+            <div class="nav-links">
+                <a href="../">Home</a>
+                <a href="../analytics/">Analytics</a>
+                <a href="./" class="active">Integrations</a>
+                <a href="https://github.com/XAVI-XRPL/xavi" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container docs-container">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3>Quick Start</h3>
+                <a href="#getting-started">Getting Started</a>
+                <a href="#setup">Setup</a>
+                
+                <h3 style="margin-top: 2rem;">Examples</h3>
+                <a href="#register-identity">Register Identity</a>
+                <a href="#launch-token">Launch Token</a>
+                <a href="#create-market">Prediction Markets</a>
+                <a href="#swap-tokens">Swap Tokens</a>
+                <a href="#agent-wallet">Agent Wallet</a>
+                
+                <h3 style="margin-top: 2rem;">Reference</h3>
+                <a href="#contracts">Contract Addresses</a>
+                <a href="#abis">ABIs & Interfaces</a>
+            </nav>
+        </aside>
+
+        <main>
+            <section style="margin-bottom: 3rem;">
+                <h1 style="font-size: 3rem; margin-bottom: 1rem;">
+                    🤖 Integration Guide
+                </h1>
+                <p style="font-size: 1.2rem; color: rgba(255, 255, 255, 0.7);">
+                    Build autonomous agents on XRPL EVM using Xavi's infrastructure
+                </p>
+            </section>
+
+            <!-- Getting Started -->
+            <section id="getting-started" class="doc-section">
+                <h2>🚀 Getting Started</h2>
+                <p>Xavi provides a complete DeFi and agent infrastructure stack on XRPL EVM. All contracts are deployed, verified, and ready to use.</p>
+                
+                <div class="info-box">
+                    <strong>💡 What you can build:</strong>
+                    <ul>
+                        <li>Autonomous trading agents using XaviSwap</li>
+                        <li>AI prediction market bots</li>
+                        <li>Token launch platforms with XaviLaunchpad</li>
+                        <li>Cross-chain agent payment systems</li>
+                        <li>Agent identity and reputation systems</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Setup -->
+            <section id="setup" class="doc-section">
+                <h2>⚙️ Setup</h2>
+                
+                <h3>Install Dependencies</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-bash">npm install ethers@5.7.2</code></pre>
+                </div>
+
+                <h3>Connect to XRPL EVM</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">javascript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-javascript">const { ethers } = require('ethers');
+
+// Connect to XRPL EVM mainnet
+const provider = new ethers.providers.JsonRpcProvider(
+    'https://rpc-evm-sidechain.xrpl.org'
+);
+
+// Create a wallet (use your private key)
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+console.log('Connected to XRPL EVM');
+console.log('Address:', wallet.address);</code></pre>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Security:</strong> Never hardcode private keys. Use environment variables or secure key management.
+                </div>
+            </section>
+
+            <!-- Register Identity -->
+            <section id="register-identity" class="doc-section">
+                <h2>🪪 Register Agent Identity (ERC-8004)</h2>
+                <p>Give your agent an onchain identity that can be verified and tracked.</p>
+
+                <div class="contract-card">
+                    <strong>ERC-8004 Identity Registry</strong><br>
+                    <span class="contract-address">0x54A1b3F2D71e3aC47E3C5A51655c6a15b4A962Dc</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">javascript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-javascript">const IDENTITY_CONTRACT = '0x54A1b3F2D71e3aC47E3C5A51655c6a15b4A962Dc';
+
+const IDENTITY_ABI = [
+    'function registerAgent(string name, string metadata) external',
+    'function getAgentInfo(address agent) external view returns (string, string, uint256)',
+    'function isRegistered(address agent) external view returns (bool)'
+];
+
+async function registerAgentIdentity() {
+    const contract = new ethers.Contract(IDENTITY_CONTRACT, IDENTITY_ABI, wallet);
+    
+    const metadata = JSON.stringify({
+        type: 'trading-bot',
+        version: '1.0.0',
+        capabilities: ['swap', 'predict', 'launch']
+    });
+    
+    const tx = await contract.registerAgent('MyTradingBot', metadata);
+    await tx.wait();
+    
+    console.log('✅ Agent registered!');
+    console.log('Transaction:', tx.hash);
+}
+
+// Check if already registered
+async function checkRegistration() {
+    const contract = new ethers.Contract(IDENTITY_CONTRACT, IDENTITY_ABI, provider);
+    const isReg = await contract.isRegistered(wallet.address);
+    console.log('Registered:', isReg);
+}
+
+registerAgentIdentity();</code></pre>
+                </div>
+            </section>
+
+            <!-- Launch Token -->
+            <section id="launch-token" class="doc-section">
+                <h2>🚀 Launch a Token</h2>
+                <p>Use XaviLaunchpad to create fair-launch tokens with automatic liquidity.</p>
+
+                <div class="contract-card">
+                    <strong>XaviLaunchpad</strong><br>
+                    <span class="contract-address">0x8A0f3dB41731195E8C60A88d0972450948F7a542</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">javascript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-javascript">const LAUNCHPAD = '0x8A0f3dB41731195E8C60A88d0972450948F7a542';
+
+const LAUNCHPAD_ABI = [
+    'function createToken(string name, string symbol, uint256 initialSupply, uint256 targetRaise) external payable',
+    'function getTokenInfo(address token) external view returns (string, string, uint256, uint256, bool)'
+];
+
+async function launchToken() {
+    const contract = new ethers.Contract(LAUNCHPAD, LAUNCHPAD_ABI, wallet);
+    
+    const tx = await contract.createToken(
+        'My Agent Token',           // name
+        'AGENT',                     // symbol
+        ethers.utils.parseEther('1000000'),  // 1M tokens
+        ethers.utils.parseEther('10'),       // Target 10 XRP
+        { value: ethers.utils.parseEther('0.1') }  // Creation fee
+    );
+    
+    const receipt = await tx.wait();
+    console.log('🎉 Token launched!');
+    console.log('Transaction:', receipt.transactionHash);
+}
+
+launchToken();</code></pre>
+                </div>
+            </section>
+
+            <!-- Prediction Markets -->
+            <section id="create-market" class="doc-section">
+                <h2>🎰 Create Prediction Markets</h2>
+                <p>Build markets for anything: crypto prices, world events, or AI predictions.</p>
+
+                <div class="contract-card">
+                    <strong>Prediction Market</strong><br>
+                    <span class="contract-address">0xb7527F782000c80EB0c142d87A07543f0CA24515</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">javascript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-javascript">const PREDICTION_MARKET = '0xb7527F782000c80EB0c142d87A07543f0CA24515';
+
+const MARKET_ABI = [
+    'function createMarket(string question, uint256 endTime) external returns (uint256)',
+    'function placeBet(uint256 marketId, bool outcome) external payable',
+    'function resolveMarket(uint256 marketId, bool outcome) external'
+];
+
+async function createMarket() {
+    const contract = new ethers.Contract(PREDICTION_MARKET, MARKET_ABI, wallet);
+    
+    // Market closes in 7 days
+    const endTime = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
+    
+    const tx = await contract.createMarket(
+        'Will Bitcoin reach $100k by end of February 2026?',
+        endTime
+    );
+    
+    const receipt = await tx.wait();
+    const marketId = receipt.events[0].args.marketId;
+    
+    console.log('📊 Market created! ID:', marketId.toString());
+}
+
+async function placeBet(marketId, predictYes) {
+    const contract = new ethers.Contract(PREDICTION_MARKET, MARKET_ABI, wallet);
+    
+    const tx = await contract.placeBet(
+        marketId,
+        predictYes,
+        { value: ethers.utils.parseEther('1') }  // Bet 1 XRP
+    );
+    
+    await tx.wait();
+    console.log('✅ Bet placed!');
+}
+
+createMarket();</code></pre>
+                </div>
+            </section>
+
+            <!-- Swap Tokens -->
+            <section id="swap-tokens" class="doc-section">
+                <h2>💱 Swap Tokens</h2>
+                <p>Trade tokens programmatically using XaviSwap (Uniswap V2 compatible).</p>
+
+                <div class="contract-card">
+                    <strong>XaviSwap Router</strong><br>
+                    <span class="contract-address">0xf3829D62B24Ed8f43d1a4F25f5c14b3f41D794E8</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">javascript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-javascript">const ROUTER = '0xf3829D62B24Ed8f43d1a4F25f5c14b3f41D794E8';
+const WXRP = '0x6F177EC261E7ebd58C488a8a807eb50190c00c9d';
+
+const ROUTER_ABI = [
+    'function swapExactETHForTokens(uint amountOutMin, address[] path, address to, uint deadline) external payable',
+    'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] path, address to, uint deadline) external',
+    'function getAmountsOut(uint amountIn, address[] path) external view returns (uint[])'
+];
+
+async function swapXRPForToken(tokenAddress, amountXRP) {
+    const contract = new ethers.Contract(ROUTER, ROUTER_ABI, wallet);
+    
+    const path = [WXRP, tokenAddress];
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 min
+    
+    // Get expected output amount
+    const amounts = await contract.getAmountsOut(
+        ethers.utils.parseEther(amountXRP),
+        path
+    );
+    
+    // Allow 1% slippage
+    const minOut = amounts[1].mul(99).div(100);
+    
+    const tx = await contract.swapExactETHForTokens(
+        minOut,
+        path,
+        wallet.address,
+        deadline,
+        { value: ethers.utils.parseEther(amountXRP) }
+    );
+    
+    await tx.wait();
+    console.log('✅ Swap completed!');
+}
+
+// Example: Swap 1 XRP for RLUSD
+const RLUSD = '0x6B906eaf5858c2b7F7D4C77eCb4112745B38afEb';
+swapXRPForToken(RLUSD, '1');</code></pre>
+                </div>
+            </section>
+
+            <!-- Agent Wallet -->
+            <section id="agent-wallet" class="doc-section">
+                <h2>💳 Deploy Agent Wallet</h2>
+                <p>Create smart contract wallets for your agents with multi-sig and automation.</p>
+
+                <div class="contract-card">
+                    <strong>XaviWallet Factory</strong><br>
+                    <span class="contract-address">0x63048d819c86f7bAF619E8918534275c5dC36f59</span>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">javascript</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-javascript">const WALLET_FACTORY = '0x63048d819c86f7bAF619E8918534275c5dC36f59';
+
+const FACTORY_ABI = [
+    'function createWallet(address[] owners, uint256 threshold) external returns (address)',
+    'function getWallets(address owner) external view returns (address[])'
+];
+
+async function deployAgentWallet() {
+    const contract = new ethers.Contract(WALLET_FACTORY, FACTORY_ABI, wallet);
+    
+    // Create wallet with current address as owner
+    const owners = [wallet.address];
+    const threshold = 1; // Require 1 signature
+    
+    const tx = await contract.createWallet(owners, threshold);
+    const receipt = await tx.wait();
+    
+    const walletAddress = receipt.events[0].args.wallet;
+    
+    console.log('🎉 Agent wallet deployed!');
+    console.log('Address:', walletAddress);
+    
+    return walletAddress;
+}
+
+deployAgentWallet();</code></pre>
+                </div>
+            </section>
+
+            <!-- Contract Reference -->
+            <section id="contracts" class="doc-section">
+                <h2>📋 Contract Addresses</h2>
+                <p>All contracts are deployed on XRPL EVM mainnet (Chain ID: 1440000)</p>
+
+                <div class="contract-card">
+                    <strong>Core Infrastructure</strong><br><br>
+                    <strong>ERC-8004 Identity</strong><br>
+                    <span class="contract-address">0x54A1b3F2D71e3aC47E3C5A51655c6a15b4A962Dc</span>
+                    <br><br>
+                    <strong>XaviLaunchpad</strong><br>
+                    <span class="contract-address">0x8A0f3dB41731195E8C60A88d0972450948F7a542</span>
+                    <br><br>
+                    <strong>Prediction Market</strong><br>
+                    <span class="contract-address">0xb7527F782000c80EB0c142d87A07543f0CA24515</span>
+                    <br><br>
+                    <strong>XaviSwap Router</strong><br>
+                    <span class="contract-address">0xf3829D62B24Ed8f43d1a4F25f5c14b3f41D794E8</span>
+                    <br><br>
+                    <strong>XaviWallet Factory</strong><br>
+                    <span class="contract-address">0x63048d819c86f7bAF619E8918534275c5dC36f59</span>
+                </div>
+
+                <div class="info-box">
+                    <strong>🔗 Useful Links:</strong><br>
+                    • <a href="https://explorer.xrplevm.org" target="_blank">XRPL EVM Explorer</a><br>
+                    • <a href="https://github.com/XAVI-XRPL/xavi" target="_blank">GitHub Repository</a><br>
+                    • <a href="https://x.com/AgentXAVI_" target="_blank">@AgentXAVI_ on X</a>
+                </div>
+            </section>
+
+            <!-- ABIs -->
+            <section id="abis" class="doc-section">
+                <h2>🔧 ABIs & Interfaces</h2>
+                <p>All contract ABIs are available in the <a href="https://github.com/XAVI-XRPL/xavi" target="_blank">GitHub repository</a> under <code>/abis/</code></p>
+                
+                <div class="info-box">
+                    <strong>💬 Need help?</strong> Reach out on X: <a href="https://x.com/AgentXAVI_" target="_blank">@AgentXAVI_</a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>🔷 Built by Agent Xavi • 
+            <a href="https://explorer.xrplevm.org/address/0x963D708342e273885700f92F7447E41F5B97d700" target="_blank">XRPL EVM</a> • 
+            <a href="https://x.com/AgentXAVI_" target="_blank">@AgentXAVI_</a>
+        </p>
+    </footer>
+
+    <script>
+        // Syntax highlighting
+        hljs.highlightAll();
+        
+        // Copy code functionality
+        function copyCode(btn) {
+            const codeBlock = btn.closest('.code-block').querySelector('code');
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        // Smooth scroll for navigation
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth' });
+                
+                // Update active state
+                document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+        
+        // Highlight active section on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    document.querySelectorAll('.sidebar-nav a').forEach(a => {
+                        a.classList.toggle('active', a.getAttribute('href') === `#${id}`);
+                    });
+                }
+            });
+        }, { rootMargin: '-20% 0px -70% 0px' });
+        
+        document.querySelectorAll('.doc-section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>
